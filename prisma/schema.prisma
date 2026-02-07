@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String        @id @default(cuid())
+  name          String?
+  email         String?       @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+  projectRooms  ProjectRoom[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model ProjectRoom {
+  id           String      @id @default(cuid())
+  userId       String
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status       String      @default("active") // active | completed | archived
+  phase        String      @default("onboarding") // onboarding | project_generation | problem_definition | solution_design | execution | review | completed
+  targetRole   String?
+  targetDomain String?
+  background   String?     @db.Text
+  interests    String?     @db.Text
+  projectId    String?     // AI backend project ID
+  messages     Message[]
+  milestones   Milestone[]
+  artifacts    Artifact[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Message {
+  id            String      @id @default(cuid())
+  projectRoomId String
+  projectRoom   ProjectRoom @relation(fields: [projectRoomId], references: [id], onDelete: Cascade)
+  role          String      // 'user' | 'assistant'
+  content       String      @db.Text
+  phase         String?     // Current phase when message was sent
+  metadata      Json?       // Additional data from AI
+  createdAt     DateTime    @default(now())
+
+  @@index([projectRoomId])
+  @@index([createdAt])
+}
+
+model Milestone {
+  id            String      @id @default(cuid())
+  projectRoomId String
+  projectRoom   ProjectRoom @relation(fields: [projectRoomId], references: [id], onDelete: Cascade)
+  title         String
+  description   String?     @db.Text
+  status        String      @default("pending") // pending | in_progress | completed
+  order         Int
+  dueDate       DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([projectRoomId])
+  @@index([status])
+}
+
+model Artifact {
+  id            String      @id @default(cuid())
+  projectRoomId String
+  projectRoom   ProjectRoom @relation(fields: [projectRoomId], references: [id], onDelete: Cascade)
+  title         String
+  content       String      @db.Text
+  type          String      // 'document' | 'link' | 'proposal' | 'review'
+  url           String?
+  metadata      Json?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([projectRoomId])
+  @@index([type])
+}
