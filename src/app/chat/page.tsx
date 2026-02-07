@@ -31,14 +31,24 @@ export default function ChatPage() {
 
   const initializeUser = async (id: string) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users?user_id=${id}`, {
+      console.log('Initializing user:', id)
+      const response = await fetch('/api/init', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: id }),
       })
+
       if (response.ok) {
+        console.log('User initialized successfully')
         setInitialized(true)
+      } else {
+        const error = await response.json()
+        console.error('Failed to initialize user:', error)
+        alert('Failed to connect to AI system. Please refresh and try again.')
       }
     } catch (error) {
       console.error('Failed to initialize user:', error)
+      alert('Failed to connect to AI system. Please refresh and try again.')
     }
   }
 
@@ -57,6 +67,8 @@ export default function ChatPage() {
     setLoading(true)
 
     try {
+      console.log('Sending message:', { userId, message: input })
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -67,10 +79,13 @@ export default function ChatPage() {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to send message')
+        const errorData = await response.json()
+        console.error('Chat API error:', errorData)
+        throw new Error(errorData.error || 'Failed to send message')
       }
 
       const data = await response.json()
+      console.log('Received response:', data)
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -80,12 +95,12 @@ export default function ChatPage() {
       }
 
       setMessages(prev => [...prev, assistantMessage])
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending message:', error)
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again.',
+        content: `Sorry, I encountered an error: ${error.message}. Please try again or refresh the page.`,
         timestamp: new Date(),
       }
       setMessages(prev => [...prev, errorMessage])
