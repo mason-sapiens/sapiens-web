@@ -17,7 +17,7 @@ export default function LandingPage() {
         {/* Single CTA */}
         <div>
           <Link
-            href="/login"
+            href="/chat"
             className="inline-block px-12 py-4 bg-teal text-ivory text-h3 font-serif hover:bg-teal-dark transition-colors duration-300 rounded-sm"
           >
             Start
