@@ -228,24 +228,6 @@ export default function ChatPage() {
 
   return (
     <div className="min-h-screen bg-ivory flex flex-col">
-      {/* Header */}
-      <header className="bg-teal text-ivory p-6">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-h2 font-serif">Sapiens</h1>
-            <p className="text-small opacity-90 mt-1">
-              Your AI Career Coach
-            </p>
-          </div>
-          <Link
-            href="/profile"
-            className="px-4 py-2 bg-ivory text-teal rounded hover:bg-ivory-dark transition-colors text-small"
-          >
-            My Projects
-          </Link>
-        </div>
-      </header>
-
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-6">
         <div className="max-w-4xl mx-auto space-y-6">

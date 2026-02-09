@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Crimson_Pro, Inter } from 'next/font/google'
 import './globals.css'
+import Navigation from '@/components/Navigation'
 
 const crimsonPro = Crimson_Pro({
   subsets: ['latin'],
@@ -27,6 +28,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${crimsonPro.variable} ${inter.variable}`}>
       <body className="font-serif bg-ivory text-charcoal antialiased">
+        <Navigation />
         {children}
       </body>
     </html>

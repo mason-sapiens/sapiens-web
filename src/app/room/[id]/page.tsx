@@ -125,30 +125,22 @@ export default function ProjectRoomPage() {
 
   return (
     <div className="min-h-screen bg-ivory flex flex-col">
-      {/* Header */}
-      <header className="bg-teal text-ivory p-4 border-b border-teal-dark">
+      {/* Project Info Header */}
+      <div className="bg-white border-b border-charcoal/10 p-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div>
-            <h1 className="text-h3 font-serif">
+            <h1 className="text-h3 font-serif text-charcoal">
               {room.targetRole ? `${room.targetRole} Project` : 'Project Room'}
             </h1>
             {room.targetDomain && (
-              <p className="text-small opacity-90">{room.targetDomain}</p>
+              <p className="text-small text-charcoal/60">{room.targetDomain}</p>
             )}
           </div>
-          <div className="flex items-center gap-4">
-            <div className="text-small">
-              Phase: <span className="font-semibold">{room.phase}</span>
-            </div>
-            <Link
-              href="/profile"
-              className="px-4 py-2 bg-ivory text-teal rounded hover:bg-ivory-dark transition-colors text-small"
-            >
-              All Projects
-            </Link>
+          <div className="text-small text-charcoal/60">
+            Phase: <span className="font-semibold text-teal">{room.phase}</span>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Tabs */}
       <div className="border-b border-charcoal/10 bg-white">

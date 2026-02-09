@@ -58,18 +58,14 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-ivory">
-      {/* Header */}
-      <header className="bg-teal text-ivory p-6 border-b border-teal-dark">
-        <div className="max-w-6xl mx-auto">
-          <h1 className="text-h2 font-serif mb-2">Your Projects</h1>
-          <p className="text-body opacity-90">
+      {/* Content */}
+      <div className="max-w-6xl mx-auto p-6">
+        <div className="mb-8">
+          <h1 className="text-h2 font-serif text-charcoal mb-2">Your Projects</h1>
+          <p className="text-body text-charcoal/70">
             Manage and track all your career development projects
           </p>
         </div>
-      </header>
-
-      {/* Content */}
-      <div className="max-w-6xl mx-auto p-6">
         <div className="flex justify-between items-center mb-8">
           <div>
             <h2 className="text-h3 text-charcoal mb-2">Active Projects</h2>
