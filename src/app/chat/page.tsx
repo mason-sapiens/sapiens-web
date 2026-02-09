@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 interface Message {
   id: string
@@ -10,18 +12,35 @@ interface Message {
 }
 
 export default function ChatPage() {
+  const router = useRouter()
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [userId, setUserId] = useState('')
   const [initialized, setInitialized] = useState(false)
+  const [currentState, setCurrentState] = useState<string>('onboarding')
+  const [roomCreated, setRoomCreated] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    // Generate user ID on mount
-    const id = 'user_' + Math.random().toString(36).substr(2, 9)
+    // Get or create persistent user ID
+    let id = localStorage.getItem('userId')
+    if (!id) {
+      id = 'user_' + Math.random().toString(36).substring(2, 15)
+      localStorage.setItem('userId', id)
+    }
     setUserId(id)
-    initializeUser(id)
+
+    // Check if user was already initialized in this session
+    const initKey = `user_initialized_${id}`
+    const alreadyInitialized = sessionStorage.getItem(initKey)
+
+    if (!alreadyInitialized) {
+      initializeUser(id)
+    } else {
+      console.log('User already initialized in this session')
+      setInitialized(true)
+    }
   }, [])
 
   useEffect(() => {
@@ -40,6 +59,9 @@ export default function ChatPage() {
 
       if (response.ok) {
         console.log('User initialized successfully')
+        // Mark user as initialized for this session
+        const initKey = `user_initialized_${id}`
+        sessionStorage.setItem(initKey, 'true')
         setInitialized(true)
       } else {
         const error = await response.json()
@@ -95,6 +117,18 @@ export default function ChatPage() {
       }
 
       setMessages(prev => [...prev, assistantMessage])
+
+      // Track state changes
+      const newState = data.state || 'onboarding'
+      console.log('State transition:', currentState, '->', newState)
+
+      // If we've moved past onboarding and haven't created a room yet, create one
+      if (currentState === 'onboarding' && newState !== 'onboarding' && !roomCreated) {
+        console.log('Creating project room...')
+        await createProjectRoom(newState)
+      }
+
+      setCurrentState(newState)
     } catch (error: any) {
       console.error('Error sending message:', error)
       const errorMessage: Message = {
@@ -109,6 +143,82 @@ export default function ChatPage() {
     }
   }
 
+  const createProjectRoom = async (phase: string) => {
+    try {
+      // Extract project details from messages
+      const targetRole = extractTargetRole(messages)
+      const targetDomain = extractTargetDomain(messages)
+
+      console.log('Creating room with data:', { userId, phase, targetRole, targetDomain })
+
+      const response = await fetch('/api/rooms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          projectData: {
+            phase,
+            targetRole,
+            targetDomain,
+          },
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        const roomId = data.room.id
+        console.log('Room created:', roomId)
+
+        // Save onboarding messages to the room
+        await saveMessagesToRoom(roomId, messages)
+
+        setRoomCreated(true)
+
+        // Navigate to the new room after a brief moment
+        setTimeout(() => {
+          router.push(`/room/${roomId}`)
+        }, 1500)
+      }
+    } catch (error) {
+      console.error('Failed to create project room:', error)
+    }
+  }
+
+  const saveMessagesToRoom = async (roomId: string, msgs: Message[]) => {
+    try {
+      // Save each message to the database via the room's message endpoint
+      for (const msg of msgs) {
+        await fetch(`/api/rooms/${roomId}/save-message`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            role: msg.role,
+            content: msg.content,
+            phase: 'onboarding',
+          }),
+        })
+      }
+      console.log('Saved', msgs.length, 'messages to room', roomId)
+    } catch (error) {
+      console.error('Failed to save messages to room:', error)
+    }
+  }
+
+  const extractTargetRole = (msgs: Message[]): string | null => {
+    // Look for role in user messages (simple extraction)
+    const userMessages = msgs.filter(m => m.role === 'user')
+    if (userMessages.length > 0) {
+      return userMessages[0].content
+    }
+    return null
+  }
+
+  const extractTargetDomain = (msgs: Message[]): string | null => {
+    // Could be extracted from conversation context
+    // For now, return null and let it be filled later
+    return null
+  }
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
@@ -120,11 +230,19 @@ export default function ChatPage() {
     <div className="min-h-screen bg-ivory flex flex-col">
       {/* Header */}
       <header className="bg-teal text-ivory p-6">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-h2 font-serif">Sapiens</h1>
-          <p className="text-small opacity-90 mt-1">
-            Your AI Career Coach
-          </p>
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <div>
+            <h1 className="text-h2 font-serif">Sapiens</h1>
+            <p className="text-small opacity-90 mt-1">
+              Your AI Career Coach
+            </p>
+          </div>
+          <Link
+            href="/profile"
+            className="px-4 py-2 bg-ivory text-teal rounded hover:bg-ivory-dark transition-colors text-small"
+          >
+            My Projects
+          </Link>
         </div>
       </header>
 
@@ -177,6 +295,15 @@ export default function ChatPage() {
                   <div className="w-2 h-2 bg-teal rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {roomCreated && (
+            <div className="bg-teal/10 border border-teal rounded-lg p-6 text-center">
+              <div className="text-h3 text-teal mb-2">✓ Project Room Created</div>
+              <p className="text-body text-charcoal/70">
+                Redirecting you to your project room...
+              </p>
             </div>
           )}
 
