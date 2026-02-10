@@ -2,12 +2,14 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useSession, signIn, signOut } from 'next-auth/react'
 
 export default function Navigation() {
   const pathname = usePathname()
+  const { data: session, status } = useSession()
 
-  // Don't show navigation on landing page
-  if (pathname === '/') {
+  // Don't show navigation on landing page or auth pages
+  if (pathname === '/' || pathname?.startsWith('/auth/')) {
     return null
   }
 
@@ -41,6 +43,31 @@ export default function Navigation() {
                 My Projects
               </Link>
             </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+            {status === 'loading' ? (
+              <div className="text-small opacity-70">Loading...</div>
+            ) : session ? (
+              <>
+                <span className="text-small opacity-90">
+                  {session.user?.email || session.user?.name}
+                </span>
+                <button
+                  onClick={() => signOut()}
+                  className="px-4 py-2 bg-ivory text-teal rounded hover:bg-ivory-dark transition-colors text-small"
+                >
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => signIn()}
+                className="px-4 py-2 bg-ivory text-teal rounded hover:bg-ivory-dark transition-colors text-small"
+              >
+                Sign In
+              </button>
+            )}
           </div>
         </div>
       </div>
