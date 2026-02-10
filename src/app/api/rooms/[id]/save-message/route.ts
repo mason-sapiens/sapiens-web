@@ -7,9 +7,10 @@ export const dynamic = 'force-dynamic'
 // POST /api/rooms/[id]/save-message - Save a message to room (without AI call)
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const { role, content, phase } = await request.json()
 
     if (!role || !content) {
@@ -21,7 +22,7 @@ export async function POST(
 
     // Verify room exists
     const room = await prisma.projectRoom.findUnique({
-      where: { id: params.id },
+      where: { id },
     })
 
     if (!room) {
@@ -34,7 +35,7 @@ export async function POST(
     // Save message
     const message = await prisma.message.create({
       data: {
-        projectRoomId: params.id,
+        projectRoomId: id,
         role,
         content,
         phase: phase || room.phase,

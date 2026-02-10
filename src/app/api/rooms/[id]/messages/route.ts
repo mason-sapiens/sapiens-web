@@ -8,9 +8,10 @@ export const maxDuration = 60
 // POST /api/rooms/[id]/messages - Send message in room
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const { userId, message } = await request.json()
 
     if (!userId || !message) {
@@ -20,11 +21,11 @@ export async function POST(
       )
     }
 
-    console.log('Sending message in room:', params.id)
+    console.log('Sending message in room:', id)
 
     // Get current room
     const room = await prisma.projectRoom.findUnique({
-      where: { id: params.id },
+      where: { id },
     })
 
     if (!room) {
@@ -37,7 +38,7 @@ export async function POST(
     // Save user message
     const userMessage = await prisma.message.create({
       data: {
-        projectRoomId: params.id,
+        projectRoomId: id,
         role: 'user',
         content: message,
         phase: room.phase,
@@ -71,7 +72,7 @@ export async function POST(
     // Save AI response
     const assistantMessage = await prisma.message.create({
       data: {
-        projectRoomId: params.id,
+        projectRoomId: id,
         role: 'assistant',
         content: data.response,
         phase: data.current_state,
@@ -80,7 +81,7 @@ export async function POST(
 
     // Update room phase and timestamp
     await prisma.projectRoom.update({
-      where: { id: params.id },
+      where: { id: id },
       data: {
         phase: data.current_state,
         updatedAt: new Date(),

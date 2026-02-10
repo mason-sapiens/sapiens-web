@@ -7,11 +7,12 @@ export const dynamic = 'force-dynamic'
 // GET /api/rooms/[id] - Get room details
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const room = await prisma.projectRoom.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         messages: {
           orderBy: { createdAt: 'asc' },
@@ -45,13 +46,14 @@ export async function GET(
 // PATCH /api/rooms/[id] - Update room
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const updates = await request.json()
 
     const room = await prisma.projectRoom.update({
-      where: { id: params.id },
+      where: { id },
       data: updates,
     })
 
