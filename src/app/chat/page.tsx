@@ -20,6 +20,7 @@ export default function ChatPage() {
   const [initialized, setInitialized] = useState(false)
   const [currentState, setCurrentState] = useState<string>('onboarding')
   const [roomCreated, setRoomCreated] = useState(false)
+  const [roomId, setRoomId] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -85,18 +86,30 @@ export default function ChatPage() {
     }
 
     setMessages(prev => [...prev, userMessage])
+    const messageContent = input
     setInput('')
     setLoading(true)
 
     try {
-      console.log('Sending message:', { userId, message: input })
+      // If this is the first message, create a room first
+      if (messages.length === 0 && !roomId) {
+        console.log('First message - creating room...')
+        const room = await createProjectRoom('onboarding')
+        if (room) {
+          // Redirect to the room page - it will handle the conversation from here
+          router.push(`/room/${room.id}`)
+          return
+        }
+      }
+
+      console.log('Sending message:', { userId, message: messageContent })
 
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId,
-          message: input,
+          message: messageContent,
         }),
       })
 
@@ -117,18 +130,7 @@ export default function ChatPage() {
       }
 
       setMessages(prev => [...prev, assistantMessage])
-
-      // Track state changes
-      const newState = data.state || 'onboarding'
-      console.log('State transition:', currentState, '->', newState)
-
-      // If we've moved past onboarding and haven't created a room yet, create one
-      if (currentState === 'onboarding' && newState !== 'onboarding' && !roomCreated) {
-        console.log('Creating project room...')
-        await createProjectRoom(newState)
-      }
-
-      setCurrentState(newState)
+      setCurrentState(data.state || 'onboarding')
     } catch (error: any) {
       console.error('Error sending message:', error)
       const errorMessage: Message = {
@@ -145,11 +147,7 @@ export default function ChatPage() {
 
   const createProjectRoom = async (phase: string) => {
     try {
-      // Extract project details from messages
-      const targetRole = extractTargetRole(messages)
-      const targetDomain = extractTargetDomain(messages)
-
-      console.log('Creating room with data:', { userId, phase, targetRole, targetDomain })
+      console.log('Creating room for user:', userId)
 
       const response = await fetch('/api/rooms', {
         method: 'POST',
@@ -158,66 +156,26 @@ export default function ChatPage() {
           userId,
           projectData: {
             phase,
-            targetRole,
-            targetDomain,
+            targetRole: null,
+            targetDomain: null,
           },
         }),
       })
 
       if (response.ok) {
         const data = await response.json()
-        const roomId = data.room.id
-        console.log('Room created:', roomId)
-
-        // Save onboarding messages to the room
-        await saveMessagesToRoom(roomId, messages)
-
+        console.log('Room created:', data.room.id)
+        setRoomId(data.room.id)
         setRoomCreated(true)
-
-        // Navigate to the new room after a brief moment
-        setTimeout(() => {
-          router.push(`/room/${roomId}`)
-        }, 1500)
+        return data.room
       }
+      return null
     } catch (error) {
       console.error('Failed to create project room:', error)
+      return null
     }
   }
 
-  const saveMessagesToRoom = async (roomId: string, msgs: Message[]) => {
-    try {
-      // Save each message to the database via the room's message endpoint
-      for (const msg of msgs) {
-        await fetch(`/api/rooms/${roomId}/save-message`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            role: msg.role,
-            content: msg.content,
-            phase: 'onboarding',
-          }),
-        })
-      }
-      console.log('Saved', msgs.length, 'messages to room', roomId)
-    } catch (error) {
-      console.error('Failed to save messages to room:', error)
-    }
-  }
-
-  const extractTargetRole = (msgs: Message[]): string | null => {
-    // Look for role in user messages (simple extraction)
-    const userMessages = msgs.filter(m => m.role === 'user')
-    if (userMessages.length > 0) {
-      return userMessages[0].content
-    }
-    return null
-  }
-
-  const extractTargetDomain = (msgs: Message[]): string | null => {
-    // Could be extracted from conversation context
-    // For now, return null and let it be filled later
-    return null
-  }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -282,9 +240,9 @@ export default function ChatPage() {
 
           {roomCreated && (
             <div className="bg-teal/10 border border-teal rounded-lg p-6 text-center">
-              <div className="text-h3 text-teal mb-2">✓ Project Room Created</div>
+              <div className="text-h3 text-teal mb-2">✓ Starting Your Project</div>
               <p className="text-body text-charcoal/70">
-                Redirecting you to your project room...
+                Taking you to your project room where all messages are saved...
               </p>
             </div>
           )}
