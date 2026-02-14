@@ -73,7 +73,7 @@ export default function SignInPage() {
         <div className="text-center mb-8">
           <h1 className="text-h2 text-charcoal mb-2 font-serif">Welcome to Sapiens</h1>
           <p className="text-body text-charcoal/70">
-            Sign in to continue your career development journey
+            Sign in or create your account to get started
           </p>
         </div>
 
@@ -152,8 +152,11 @@ export default function SignInPage() {
             disabled={isLoading || !email}
             className="w-full px-6 py-4 bg-teal text-ivory rounded-lg hover:bg-teal-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-serif text-body"
           >
-            {isLoading ? 'Sending...' : 'Send sign-in link'}
+            {isLoading ? 'Sending...' : 'Continue with Email'}
           </button>
+          <p className="text-xs text-charcoal/50 text-center mt-2">
+            New user? We'll create your account automatically
+          </p>
         </form>
 
         <p className="text-small text-charcoal/60 text-center mt-6">
