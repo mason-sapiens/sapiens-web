@@ -8,15 +8,27 @@ export default function SignInPage() {
   const [email, setEmail] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setError(null)
     try {
-      await signIn('email', { email, redirect: false })
-      setEmailSent(true)
+      const result = await signIn('email', { email, redirect: false })
+      console.log('Sign in result:', result)
+
+      if (result?.error) {
+        setError(result.error)
+        console.error('Sign in error:', result.error)
+      } else if (result?.ok) {
+        setEmailSent(true)
+      } else {
+        setError('Failed to send email. Please try again.')
+      }
     } catch (error) {
       console.error('Email sign in error:', error)
+      setError('An unexpected error occurred. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -118,6 +130,12 @@ export default function SignInPage() {
               className="w-full px-4 py-3 border border-charcoal/20 rounded-lg focus:outline-none focus:border-teal bg-ivory text-charcoal placeholder:text-charcoal/40 font-serif text-body"
             />
           </div>
+
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-small text-red-600">
+              {error}
+            </div>
+          )}
 
           <button
             type="submit"
