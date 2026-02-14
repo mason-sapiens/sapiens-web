@@ -72,9 +72,17 @@ export default function SignInPage() {
       <div className="max-w-md w-full bg-white rounded-lg border border-charcoal/10 p-8">
         <div className="text-center mb-8">
           <h1 className="text-h2 text-charcoal mb-2 font-serif">Welcome to Sapiens</h1>
-          <p className="text-body text-charcoal/70">
-            Sign in or create your account to get started
+          <p className="text-body text-charcoal/70 mb-3">
+            Enter your email to get started
           </p>
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-teal/10 rounded-lg border border-teal/20">
+            <svg className="w-4 h-4 text-teal" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="text-small text-teal font-medium">
+              New users will be automatically registered
+            </span>
+          </div>
         </div>
 
         {/* OAuth Providers */}
@@ -135,7 +143,7 @@ export default function SignInPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              placeholder="Enter your email address"
               required
               className="w-full px-4 py-3 border border-charcoal/20 rounded-lg focus:outline-none focus:border-teal bg-ivory text-charcoal placeholder:text-charcoal/40 font-serif text-body"
             />
@@ -150,13 +158,15 @@ export default function SignInPage() {
           <button
             type="submit"
             disabled={isLoading || !email}
-            className="w-full px-6 py-4 bg-teal text-ivory rounded-lg hover:bg-teal-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-serif text-body"
+            className="w-full px-6 py-4 bg-teal text-ivory rounded-lg hover:bg-teal-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-serif text-body font-semibold"
           >
-            {isLoading ? 'Sending...' : 'Continue with Email'}
+            {isLoading ? 'Sending magic link...' : 'Sign In / Sign Up'}
           </button>
-          <p className="text-xs text-charcoal/50 text-center mt-2">
-            New user? We'll create your account automatically
-          </p>
+          <div className="mt-3 p-3 bg-ivory border border-charcoal/10 rounded-lg">
+            <p className="text-xs text-charcoal/60 text-center leading-relaxed">
+              💡 <strong>First time here?</strong> No worries! When you click the button above, we'll create your account automatically and send you a magic link to your email.
+            </p>
+          </div>
         </form>
 
         <p className="text-small text-charcoal/60 text-center mt-6">
