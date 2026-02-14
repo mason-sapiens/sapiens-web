@@ -15,20 +15,30 @@ export default function SignInPage() {
     setIsLoading(true)
     setError(null)
     try {
+      console.log('Starting sign in with email:', email)
       const result = await signIn('email', { email, redirect: false })
       console.log('Sign in result:', result)
+      console.log('Result type:', typeof result)
+      console.log('Result keys:', result ? Object.keys(result) : 'null')
 
       if (result?.error) {
-        setError(result.error)
-        console.error('Sign in error:', result.error)
+        const errorMsg = `Sign in error: ${result.error}`
+        setError(errorMsg)
+        console.error(errorMsg)
       } else if (result?.ok) {
+        console.log('Email sent successfully!')
         setEmailSent(true)
       } else {
-        setError('Failed to send email. Please try again.')
+        const errorMsg = `Unexpected result: ${JSON.stringify(result)}`
+        setError(errorMsg)
+        console.error(errorMsg)
       }
     } catch (error) {
-      console.error('Email sign in error:', error)
-      setError('An unexpected error occurred. Please try again.')
+      console.error('Email sign in exception:', error)
+      console.error('Error name:', (error as Error)?.name)
+      console.error('Error message:', (error as Error)?.message)
+      console.error('Error stack:', (error as Error)?.stack)
+      setError(`Error: ${(error as Error)?.message || 'An unexpected error occurred'}`)
     } finally {
       setIsLoading(false)
     }
