@@ -21,28 +21,16 @@ export default function Navigation() {
             <Link href="/" className="text-h3 font-serif hover:opacity-80 transition-opacity">
               Sapiens
             </Link>
-            <div className="flex gap-4">
-              <Link
-                href="/profile"
-                className={`px-4 py-2 rounded transition-colors text-body ${
-                  pathname === '/profile'
-                    ? 'bg-ivory text-teal'
-                    : 'text-ivory hover:bg-teal-dark'
-                }`}
-              >
-                My Projects
-              </Link>
-              <Link
-                href="/chat"
-                className={`px-4 py-2 rounded transition-colors text-body ${
-                  pathname === '/chat'
-                    ? 'bg-ivory text-teal'
-                    : 'text-ivory hover:bg-teal-dark'
-                }`}
-              >
-                New Chat
-              </Link>
-            </div>
+            <Link
+              href="/profile"
+              className={`px-4 py-2 rounded transition-colors text-body ${
+                pathname === '/profile'
+                  ? 'bg-ivory text-teal'
+                  : 'text-ivory hover:bg-teal-dark'
+              }`}
+            >
+              My Projects
+            </Link>
           </div>
 
           <div className="flex items-center gap-4">
