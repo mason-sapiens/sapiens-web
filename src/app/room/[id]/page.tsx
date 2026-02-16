@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 
 interface Message {
@@ -39,7 +40,9 @@ interface Room {
 
 export default function ProjectRoomPage() {
   const params = useParams()
+  const router = useRouter()
   const roomId = params.id as string
+  const { data: session, status } = useSession()
 
   const [room, setRoom] = useState<Room | null>(null)
   const [activeTab, setActiveTab] = useState<'chat' | 'archive' | 'timeline'>('chat')
@@ -49,14 +52,22 @@ export default function ProjectRoomPage() {
   const [userId, setUserId] = useState('')
 
   useEffect(() => {
-    // Get persistent user ID
-    const id = localStorage.getItem('userId') || 'user_' + Math.random().toString(36).substring(2, 15)
-    if (!localStorage.getItem('userId')) {
-      localStorage.setItem('userId', id)
+    // Redirect to sign in if not authenticated
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin')
+      return
     }
-    setUserId(id)
-    loadRoom()
-  }, [roomId])
+
+    if (status === 'loading') {
+      return
+    }
+
+    // Use authenticated user's ID
+    if (session?.user?.id) {
+      setUserId(session.user.id)
+      loadRoom()
+    }
+  }, [roomId, session, status, router])
 
   const loadRoom = async () => {
     try {

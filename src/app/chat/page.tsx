@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 
 interface Message {
@@ -13,6 +14,7 @@ interface Message {
 
 export default function ChatPage() {
   const router = useRouter()
+  const { data: session, status } = useSession()
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -24,30 +26,50 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    // Clear messages when page loads (fresh start)
-    setMessages([])
-    setRoomId(null)
-    setRoomCreated(false)
-
-    // Get or create persistent user ID
-    let id = localStorage.getItem('userId')
-    if (!id) {
-      id = 'user_' + Math.random().toString(36).substring(2, 15)
-      localStorage.setItem('userId', id)
+    // Redirect to sign in if not authenticated
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin')
+      return
     }
-    setUserId(id)
 
-    // Check if user was already initialized in this session
-    const initKey = `user_initialized_${id}`
-    const alreadyInitialized = sessionStorage.getItem(initKey)
-
-    if (!alreadyInitialized) {
-      initializeUser(id)
-    } else {
-      console.log('User already initialized in this session')
-      setInitialized(true)
+    if (status === 'loading') {
+      return
     }
-  }, [])
+
+    // Use authenticated user's ID
+    if (session?.user?.id) {
+      const authenticatedUserId = session.user.id
+
+      // Check if userId changed (different user logged in)
+      const lastUserId = localStorage.getItem('lastUserId')
+      if (lastUserId && lastUserId !== authenticatedUserId) {
+        console.log('Different user detected - clearing old chat data')
+        // Clear all old chat data
+        localStorage.clear()
+        sessionStorage.clear()
+      }
+
+      // Store current user ID
+      localStorage.setItem('lastUserId', authenticatedUserId)
+      setUserId(authenticatedUserId)
+
+      // Clear messages for fresh start
+      setMessages([])
+      setRoomId(null)
+      setRoomCreated(false)
+
+      // Check if user was already initialized in this session
+      const initKey = `user_initialized_${authenticatedUserId}`
+      const alreadyInitialized = sessionStorage.getItem(initKey)
+
+      if (!alreadyInitialized) {
+        initializeUser(authenticatedUserId)
+      } else {
+        console.log('User already initialized in this session')
+        setInitialized(true)
+      }
+    }
+  }, [session, status, router])
 
   useEffect(() => {
     // Scroll to bottom when messages change
@@ -205,6 +227,20 @@ export default function ChatPage() {
     if (userId) {
       initializeUser(userId)
     }
+  }
+
+  // Show loading while checking authentication
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen bg-ivory flex items-center justify-center">
+        <div className="text-charcoal/60">Loading...</div>
+      </div>
+    )
+  }
+
+  // Redirect if not authenticated (will happen in useEffect)
+  if (status === 'unauthenticated') {
+    return null
   }
 
   return (
