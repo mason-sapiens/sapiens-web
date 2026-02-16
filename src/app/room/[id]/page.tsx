@@ -113,6 +113,30 @@ export default function ProjectRoomPage() {
     }
   }
 
+  const createNewRoom = async () => {
+    if (!userId) return
+
+    try {
+      const response = await fetch('/api/rooms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          projectData: {
+            phase: 'onboarding',
+          },
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        router.push(`/room/${data.room.id}`)
+      }
+    } catch (error) {
+      console.error('Error creating new room:', error)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-ivory flex items-center justify-center">
@@ -147,8 +171,16 @@ export default function ProjectRoomPage() {
               <p className="text-small text-charcoal/60">{room.targetDomain}</p>
             )}
           </div>
-          <div className="text-small text-charcoal/60">
-            Phase: <span className="font-semibold text-teal">{room.phase}</span>
+          <div className="flex items-center gap-4">
+            <div className="text-small text-charcoal/60">
+              Phase: <span className="font-semibold text-teal">{room.phase}</span>
+            </div>
+            <button
+              onClick={createNewRoom}
+              className="px-4 py-2 border border-teal text-teal rounded-lg hover:bg-teal hover:text-ivory transition-colors font-serif text-small"
+            >
+              + New Chat
+            </button>
           </div>
         </div>
       </div>

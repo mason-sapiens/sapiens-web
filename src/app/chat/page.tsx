@@ -53,23 +53,42 @@ export default function ChatPage() {
       localStorage.setItem('lastUserId', authenticatedUserId)
       setUserId(authenticatedUserId)
 
-      // Clear messages for fresh start
-      setMessages([])
-      setRoomId(null)
-      setRoomCreated(false)
-
-      // Check if user was already initialized in this session
-      const initKey = `user_initialized_${authenticatedUserId}`
-      const alreadyInitialized = sessionStorage.getItem(initKey)
-
-      if (!alreadyInitialized) {
-        initializeUser(authenticatedUserId)
-      } else {
-        console.log('User already initialized in this session')
-        setInitialized(true)
-      }
+      // Check for existing active room or create new one
+      loadOrCreateRoom(authenticatedUserId)
     }
   }, [session, status, router])
+
+  const loadOrCreateRoom = async (userId: string) => {
+    try {
+      // Try to get user's active room
+      const response = await fetch(`/api/rooms?userId=${userId}`)
+
+      if (response.ok) {
+        const data = await response.json()
+        const activeRoom = data.rooms.find((r: any) => r.status === 'active')
+
+        if (activeRoom) {
+          // Redirect to existing active room
+          console.log('Redirecting to existing room:', activeRoom.id)
+          router.push(`/room/${activeRoom.id}`)
+          return
+        }
+      }
+
+      // No active room found - create new one
+      console.log('No active room - creating new one')
+      const newRoom = await createProjectRoom('onboarding')
+      if (newRoom) {
+        router.push(`/room/${newRoom.id}`)
+      } else {
+        // Fallback to chat interface if room creation fails
+        setInitialized(true)
+      }
+    } catch (error) {
+      console.error('Error loading/creating room:', error)
+      setInitialized(true)
+    }
+  }
 
   useEffect(() => {
     // Scroll to bottom when messages change
@@ -211,21 +230,12 @@ export default function ChatPage() {
     }
   }
 
-  const startNewChat = () => {
-    // Clear all messages and state
-    setMessages([])
-    setRoomId(null)
-    setRoomCreated(false)
-    setInput('')
-    setCurrentState('onboarding')
-
-    // Clear the session initialization (so user can be re-initialized if needed)
-    const initKey = `user_initialized_${userId}`
-    sessionStorage.removeItem(initKey)
-
-    // Re-initialize
-    if (userId) {
-      initializeUser(userId)
+  const startNewChat = async () => {
+    // Create a new room
+    const newRoom = await createProjectRoom('onboarding')
+    if (newRoom) {
+      // Redirect to the new room
+      router.push(`/room/${newRoom.id}`)
     }
   }
 
