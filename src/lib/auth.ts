@@ -68,6 +68,18 @@ export const authOptions: NextAuthOptions = {
       }
       return session
     },
+    async signIn({ user, account, profile }) {
+      // Allow sign in
+      return true
+    },
+    async redirect({ url, baseUrl }) {
+      // After successful sign-in, redirect to chat page
+      if (url.startsWith(baseUrl)) {
+        return url
+      }
+      // Default redirect to chat page after sign-in
+      return `${baseUrl}/chat`
+    },
   },
   session: {
     strategy: 'database',
