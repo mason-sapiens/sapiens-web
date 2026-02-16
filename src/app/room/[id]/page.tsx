@@ -158,6 +158,96 @@ export default function ProjectRoomPage() {
     )
   }
 
+  // Simple onboarding UI
+  if (room.phase === 'onboarding') {
+    return (
+      <div className="min-h-screen bg-ivory flex flex-col">
+        {/* Simple Header */}
+        <div className="bg-white border-b border-charcoal/10 p-6">
+          <div className="max-w-3xl mx-auto">
+            <Link href="/profile" className="text-small text-teal hover:underline mb-4 inline-block">
+              ← Back to My Projects
+            </Link>
+          </div>
+        </div>
+
+        {/* Simple Chat Interface */}
+        <div className="flex-1 flex flex-col max-w-3xl mx-auto w-full px-6">
+          {/* Welcome Message */}
+          <div className="py-12 text-center">
+            <h1 className="text-h2 font-serif text-charcoal mb-4">
+              Welcome to Sapiens
+            </h1>
+            <p className="text-body text-charcoal/70">
+              Let's start by understanding your career goals
+            </p>
+          </div>
+
+          {/* Messages */}
+          <div className="flex-1 space-y-6 mb-6 overflow-y-auto">
+            {room.messages.map((message) => (
+              <div
+                key={message.id}
+                className={`flex ${
+                  message.role === 'user' ? 'justify-end' : 'justify-start'
+                }`}
+              >
+                <div
+                  className={`max-w-[80%] rounded-lg px-6 py-4 ${
+                    message.role === 'user'
+                      ? 'bg-teal text-ivory'
+                      : 'bg-white border border-charcoal/10 text-charcoal'
+                  }`}
+                >
+                  <p className="text-body whitespace-pre-wrap">{message.content}</p>
+                </div>
+              </div>
+            ))}
+
+            {sending && (
+              <div className="flex justify-start">
+                <div className="bg-white border border-charcoal/10 rounded-lg px-6 py-4">
+                  <div className="flex space-x-2">
+                    <div className="w-2 h-2 bg-teal rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-teal rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-2 h-2 bg-teal rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Simple Input */}
+          <div className="pb-6 sticky bottom-0 bg-ivory">
+            <div className="mb-2">
+              <p className="text-small text-charcoal/60">
+                💡 <strong>Example:</strong> "I'm a software engineer interested in product management"
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
+                placeholder="Tell me about your career goals..."
+                className="flex-1 px-6 py-4 border border-charcoal/20 rounded-lg focus:outline-none focus:border-teal bg-white text-charcoal placeholder:text-charcoal/40 font-serif text-body"
+              />
+              <button
+                onClick={sendMessage}
+                disabled={sending || !input.trim()}
+                className="px-8 py-4 bg-teal text-ivory rounded-lg hover:bg-teal-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-serif text-body"
+              >
+                {sending ? 'Sending...' : 'Send'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Full Project Room UI (after onboarding)
   return (
     <div className="min-h-screen bg-ivory flex flex-col">
       {/* Project Info Header */}
