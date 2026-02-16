@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
 interface RoomPreview {
@@ -19,20 +21,27 @@ interface RoomPreview {
 }
 
 export default function ProfilePage() {
+  const router = useRouter()
+  const { data: session, status } = useSession()
   const [rooms, setRooms] = useState<RoomPreview[]>([])
   const [loading, setLoading] = useState(true)
-  const [userId, setUserId] = useState<string>('')
 
   useEffect(() => {
-    // Get or create user ID
-    let id = localStorage.getItem('userId')
-    if (!id) {
-      id = 'user_' + Math.random().toString(36).substring(2, 15)
-      localStorage.setItem('userId', id)
+    // Redirect to sign in if not authenticated
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin')
+      return
     }
-    setUserId(id)
-    loadRooms(id)
-  }, [])
+
+    if (status === 'loading') {
+      return
+    }
+
+    // Load rooms for authenticated user
+    if (session?.user?.id) {
+      loadRooms(session.user.id)
+    }
+  }, [session, status, router])
 
   const loadRooms = async (uid: string) => {
     try {
@@ -48,12 +57,16 @@ export default function ProfilePage() {
     }
   }
 
-  if (loading) {
+  if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen bg-ivory flex items-center justify-center">
         <div className="text-teal text-h3">Loading your projects...</div>
       </div>
     )
+  }
+
+  if (status === 'unauthenticated') {
+    return null
   }
 
   return (

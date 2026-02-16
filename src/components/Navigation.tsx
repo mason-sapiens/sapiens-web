@@ -23,16 +23,6 @@ export default function Navigation() {
             </Link>
             <div className="flex gap-4">
               <Link
-                href="/chat"
-                className={`px-4 py-2 rounded transition-colors text-body ${
-                  pathname === '/chat'
-                    ? 'bg-ivory text-teal'
-                    : 'text-ivory hover:bg-teal-dark'
-                }`}
-              >
-                New Chat
-              </Link>
-              <Link
                 href="/profile"
                 className={`px-4 py-2 rounded transition-colors text-body ${
                   pathname === '/profile'
@@ -41,6 +31,16 @@ export default function Navigation() {
                 }`}
               >
                 My Projects
+              </Link>
+              <Link
+                href="/chat"
+                className={`px-4 py-2 rounded transition-colors text-body ${
+                  pathname === '/chat'
+                    ? 'bg-ivory text-teal'
+                    : 'text-ivory hover:bg-teal-dark'
+                }`}
+              >
+                New Chat
               </Link>
             </div>
           </div>
