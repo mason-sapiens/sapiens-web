@@ -24,6 +24,11 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    // Clear messages when page loads (fresh start)
+    setMessages([])
+    setRoomId(null)
+    setRoomCreated(false)
+
     // Get or create persistent user ID
     let id = localStorage.getItem('userId')
     if (!id) {
@@ -184,8 +189,41 @@ export default function ChatPage() {
     }
   }
 
+  const startNewChat = () => {
+    // Clear all messages and state
+    setMessages([])
+    setRoomId(null)
+    setRoomCreated(false)
+    setInput('')
+    setCurrentState('onboarding')
+
+    // Clear the session initialization (so user can be re-initialized if needed)
+    const initKey = `user_initialized_${userId}`
+    sessionStorage.removeItem(initKey)
+
+    // Re-initialize
+    if (userId) {
+      initializeUser(userId)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-ivory flex flex-col">
+      {/* Header with New Chat button */}
+      {messages.length > 0 && (
+        <div className="border-b border-charcoal/10 bg-white px-6 py-4">
+          <div className="max-w-4xl mx-auto flex justify-between items-center">
+            <h1 className="text-h3 text-charcoal font-serif">Chat</h1>
+            <button
+              onClick={startNewChat}
+              className="px-4 py-2 border border-teal text-teal rounded-lg hover:bg-teal hover:text-ivory transition-colors font-serif text-small"
+            >
+              + New Chat
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-6">
         <div className="max-w-4xl mx-auto space-y-6">
