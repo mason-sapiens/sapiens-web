@@ -15,6 +15,7 @@ export default function SignUpPage() {
   })
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [success, setSuccess] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -48,26 +49,37 @@ export default function SignUpPage() {
         return
       }
 
-      // Automatically sign in after successful signup
-      const signInResult = await signIn('credentials', {
-        email: formData.email,
-        password: formData.password,
-        redirect: false,
-      })
-
-      if (signInResult?.error) {
-        setError('Account created, but sign-in failed. Please try signing in manually.')
-        setIsLoading(false)
-        return
-      }
-
-      // Redirect to chat
-      router.push('/chat')
+      // Show success message
+      setSuccess(true)
+      setIsLoading(false)
     } catch (error) {
       console.error('Signup error:', error)
       setError('An unexpected error occurred')
       setIsLoading(false)
     }
+  }
+
+  if (success) {
+    return (
+      <div className="min-h-screen bg-ivory flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-white rounded-lg border border-charcoal/10 p-8 text-center">
+          <div className="text-h2 text-teal mb-4">📧</div>
+          <h1 className="text-h2 text-charcoal mb-4 font-serif">Check Your Email</h1>
+          <p className="text-body text-charcoal/70 mb-6">
+            We've sent a verification link to <strong>{formData.email}</strong>
+          </p>
+          <p className="text-small text-charcoal/60 mb-6">
+            Please click the link in the email to verify your account. The link will expire in 24 hours.
+          </p>
+          <Link
+            href="/auth/signin"
+            className="inline-block px-6 py-3 bg-teal text-ivory rounded-lg hover:bg-teal-dark transition-colors font-serif text-body"
+          >
+            Go to Sign In
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   return (
