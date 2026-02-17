@@ -60,9 +60,24 @@ export default function ChatPage() {
 
   const loadOrCreateRoom = async (userId: string) => {
     try {
-      // Always create a new room when user accesses /chat
-      // This ensures each "New Chat" starts fresh
-      console.log('Creating new chat room for user:', userId)
+      // Check if user has existing rooms
+      console.log('Checking for existing rooms for user:', userId)
+      const response = await fetch(`/api/rooms?userId=${userId}`)
+
+      if (response.ok) {
+        const data = await response.json()
+
+        // If user has existing rooms, redirect to the most recently updated one
+        if (data.rooms && data.rooms.length > 0) {
+          const latestRoom = data.rooms[0] // Rooms are ordered by updatedAt desc
+          console.log('Found existing room, redirecting to:', latestRoom.id)
+          router.push(`/room/${latestRoom.id}`)
+          return
+        }
+      }
+
+      // No existing rooms, create a new one
+      console.log('No existing rooms found, creating new chat room')
       const newRoom = await createProjectRoom('onboarding')
       if (newRoom) {
         router.push(`/room/${newRoom.id}`)
@@ -71,7 +86,7 @@ export default function ChatPage() {
         setInitialized(true)
       }
     } catch (error) {
-      console.error('Error creating room:', error)
+      console.error('Error loading or creating room:', error)
       setInitialized(true)
     }
   }
