@@ -79,18 +79,6 @@ export async function POST(request: NextRequest) {
 
     console.log('Project room created:', room.id)
 
-    // Create initial welcome message from assistant
-    await prisma.message.create({
-      data: {
-        projectRoomId: room.id,
-        role: 'assistant',
-        content: "Hi! I'm here to help you build an impressive portfolio project. Let's start by understanding your career goals.\n\nWhat role are you targeting? (e.g., Product Manager, Data Scientist, Software Engineer)",
-        phase: room.phase,
-      },
-    })
-
-    console.log('Initial welcome message created for room:', room.id)
-
     return NextResponse.json({ room })
   } catch (error: any) {
     console.error('Error creating room:', error)

@@ -75,11 +75,37 @@ export default function ProjectRoomPage() {
       if (response.ok) {
         const data = await response.json()
         setRoom(data.room)
+
+        // If room is empty (no messages), trigger initial greeting from AI
+        if (data.room.messages.length === 0 && session?.user?.id) {
+          console.log('Room is empty, triggering initial AI greeting...')
+          await triggerInitialGreeting(session.user.id)
+        }
       }
     } catch (error) {
       console.error('Failed to load room:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const triggerInitialGreeting = async (userId: string) => {
+    try {
+      // Send an empty message to trigger the AI's greeting
+      const response = await fetch(`/api/rooms/${roomId}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: userId,
+          message: 'START', // Special trigger message for initial greeting
+        }),
+      })
+
+      if (response.ok) {
+        await loadRoom() // Reload to get the AI's greeting
+      }
+    } catch (error) {
+      console.error('Error triggering initial greeting:', error)
     }
   }
 

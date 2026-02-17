@@ -35,15 +35,18 @@ export async function POST(
       )
     }
 
-    // Save user message
-    const userMessage = await prisma.message.create({
-      data: {
-        projectRoomId: id,
-        role: 'user',
-        content: message,
-        phase: room.phase,
-      },
-    })
+    // Save user message (skip if it's the initial trigger)
+    let userMessage = null
+    if (message !== 'START') {
+      userMessage = await prisma.message.create({
+        data: {
+          projectRoomId: id,
+          role: 'user',
+          content: message,
+          phase: room.phase,
+        },
+      })
+    }
 
     // Call AI backend
     const AI_BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://3.101.121.64:8000'
