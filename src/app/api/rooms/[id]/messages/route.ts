@@ -57,6 +57,7 @@ export async function POST(
       body: JSON.stringify({
         user_id: userId,
         message: message,
+        room_id: id,  // Pass room ID for conversation separation
       }),
       signal: controller.signal,
     })
