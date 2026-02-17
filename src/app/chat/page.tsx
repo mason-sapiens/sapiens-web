@@ -60,23 +60,9 @@ export default function ChatPage() {
 
   const loadOrCreateRoom = async (userId: string) => {
     try {
-      // Try to get user's active room
-      const response = await fetch(`/api/rooms?userId=${userId}`)
-
-      if (response.ok) {
-        const data = await response.json()
-        const activeRoom = data.rooms.find((r: any) => r.status === 'active')
-
-        if (activeRoom) {
-          // Redirect to existing active room
-          console.log('Redirecting to existing room:', activeRoom.id)
-          router.push(`/room/${activeRoom.id}`)
-          return
-        }
-      }
-
-      // No active room found - create new one
-      console.log('No active room - creating new one')
+      // Always create a new room when user accesses /chat
+      // This ensures each "New Chat" starts fresh
+      console.log('Creating new chat room for user:', userId)
       const newRoom = await createProjectRoom('onboarding')
       if (newRoom) {
         router.push(`/room/${newRoom.id}`)
@@ -85,7 +71,7 @@ export default function ChatPage() {
         setInitialized(true)
       }
     } catch (error) {
-      console.error('Error loading/creating room:', error)
+      console.error('Error creating room:', error)
       setInitialized(true)
     }
   }
