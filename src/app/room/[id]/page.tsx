@@ -101,6 +101,7 @@ export default function ProjectRoomPage() {
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [userId, setUserId] = useState('')
+  const [selectedPhase, setSelectedPhase] = useState<string | null>(null)
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -246,8 +247,18 @@ export default function ProjectRoomPage() {
   const currentPhaseIndex = PHASE_ORDER.indexOf(room.phase)
   const messagesByPhase = groupMessagesByPhase(room.messages)
 
-  // Special rendering for onboarding phase when it's the current phase
-  if (room.phase === 'onboarding' && currentPhaseIndex === 0) {
+  // Set selected phase to current phase on load
+  useEffect(() => {
+    if (room && !selectedPhase) {
+      setSelectedPhase(room.phase)
+    }
+  }, [room, selectedPhase])
+
+  // Determine which phase to display
+  const displayPhase = selectedPhase || room.phase
+
+  // Special rendering for onboarding phase when it's the current phase and viewing it
+  if (displayPhase === 'onboarding' && room.phase === 'onboarding') {
     return (
       <TypeformOnboarding
         messages={messagesByPhase['onboarding'] || []}
@@ -257,8 +268,8 @@ export default function ProjectRoomPage() {
     )
   }
 
-  // Special rendering for problem_definition phase when it's the current phase
-  if (room.phase === 'problem_definition' && messagesByPhase['problem_definition']?.length > 0) {
+  // Special rendering for problem_definition phase when viewing it and it's current
+  if (displayPhase === 'problem_definition' && room.phase === 'problem_definition' && messagesByPhase['problem_definition']?.length > 0) {
     const problemDefMessages = messagesByPhase['problem_definition']
     const hasUserResponse = problemDefMessages.some((m) => m.role === 'user')
 
@@ -305,38 +316,80 @@ export default function ProjectRoomPage() {
         </div>
       </div>
 
-      {/* Phase Cards */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="space-y-6">
-          {PHASE_ORDER.map((phaseName, index) => {
-            const phaseMessages = messagesByPhase[phaseName] || []
-            const isCurrentPhase = room.phase === phaseName
-            const isCompleted = index < currentPhaseIndex
-            const phaseInfo = PHASE_INFO[phaseName] || {
-              title: phaseName,
-              description: '',
-              icon: '📋',
-            }
+      {/* Phase Navigation */}
+      <div className="bg-white border-b border-charcoal/10">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex gap-2 overflow-x-auto">
+            {PHASE_ORDER.map((phaseName, index) => {
+              const phaseMessages = messagesByPhase[phaseName] || []
+              const isCurrentPhase = room.phase === phaseName
+              const isCompleted = index < currentPhaseIndex
+              const hasContent = phaseMessages.length > 0 || isCurrentPhase
+              const isSelected = displayPhase === phaseName
+              const phaseInfo = PHASE_INFO[phaseName] || {
+                title: phaseName,
+                description: '',
+                icon: '📋',
+              }
 
-            // Skip phases that haven't started yet (no messages and not current)
-            if (phaseMessages.length === 0 && !isCurrentPhase) {
-              return null
-            }
+              // Skip phases that haven't started yet
+              if (!hasContent) {
+                return null
+              }
 
-            return (
-              <PhaseCard
-                key={phaseName}
-                phase={phaseName}
-                phaseInfo={phaseInfo}
-                messages={phaseMessages}
-                isCurrentPhase={isCurrentPhase}
-                isCompleted={isCompleted}
-                onSendMessage={isCurrentPhase ? sendMessage : undefined}
-                isSending={sending}
-              />
-            )
-          })}
+              return (
+                <button
+                  key={phaseName}
+                  onClick={() => setSelectedPhase(phaseName)}
+                  className={`flex items-center gap-2 px-4 py-4 border-b-2 transition-all whitespace-nowrap ${
+                    isSelected
+                      ? 'border-teal text-teal bg-teal/5'
+                      : 'border-transparent text-charcoal/60 hover:text-charcoal hover:bg-charcoal/5'
+                  }`}
+                >
+                  <span className="text-xl">{phaseInfo.icon}</span>
+                  <span className="font-serif text-small">{phaseInfo.title}</span>
+                  {isCurrentPhase && (
+                    <span className="ml-2 px-2 py-0.5 bg-teal/20 text-teal rounded-full text-xs">
+                      Active
+                    </span>
+                  )}
+                  {isCompleted && (
+                    <span className="ml-2 text-green-600">✓</span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
         </div>
+      </div>
+
+      {/* Selected Phase Content */}
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {(() => {
+          const phaseMessages = messagesByPhase[displayPhase] || []
+          const isCurrentPhase = room.phase === displayPhase
+          const phaseIndex = PHASE_ORDER.indexOf(displayPhase)
+          const isCompleted = phaseIndex < currentPhaseIndex
+          const phaseInfo = PHASE_INFO[displayPhase] || {
+            title: displayPhase,
+            description: '',
+            icon: '📋',
+          }
+
+          return (
+            <PhaseCard
+              key={displayPhase}
+              phase={displayPhase}
+              phaseInfo={phaseInfo}
+              messages={phaseMessages}
+              isCurrentPhase={isCurrentPhase}
+              isCompleted={isCompleted}
+              onSendMessage={isCurrentPhase ? sendMessage : undefined}
+              isSending={sending}
+            />
+          )
+        })()}
 
         {/* Quick Stats */}
         {room.milestones.length > 0 && (
