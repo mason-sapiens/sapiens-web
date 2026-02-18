@@ -82,6 +82,23 @@ export default function AssignmentProblemDefinition({
     return scores
   }
 
+  // Parse field-specific feedback from AI response
+  const parseFieldFeedback = (content: string) => {
+    const feedback: Record<string, string> = {}
+
+    const problemMatch = content.match(/## Problem Statement\s*([\s\S]*?)(?=##|\n\n#|$)/i)
+    const audienceMatch = content.match(/## Target Audience\s*([\s\S]*?)(?=##|\n\n#|$)/i)
+    const painPointsMatch = content.match(/## Key Pain Points\s*([\s\S]*?)(?=##|\n\n#|$)/i)
+    const metricsMatch = content.match(/## Success Metrics\s*([\s\S]*?)(?=##|\n\n#|$)/i)
+
+    if (problemMatch) feedback.problemStatement = problemMatch[1].trim()
+    if (audienceMatch) feedback.targetAudience = audienceMatch[1].trim()
+    if (painPointsMatch) feedback.keyPainPoints = painPointsMatch[1].trim()
+    if (metricsMatch) feedback.successMetrics = metricsMatch[1].trim()
+
+    return feedback
+  }
+
   // Pre-fill form with previous submission if exists
   useEffect(() => {
     if (hasSubmitted && latestSubmission && formData.problemStatement === '') {
@@ -91,7 +108,20 @@ export default function AssignmentProblemDefinition({
   }, [hasSubmitted, latestSubmission, formData.problemStatement])
 
   const scores = latestFeedback ? parseScores(latestFeedback.content) : {}
+  const fieldFeedback = latestFeedback ? parseFieldFeedback(latestFeedback.content) : {}
   const evaluationPassed = hasSubmitted && latestFeedback?.content.includes('ready to move to solution design')
+
+  // State for showing/hiding feedback popups
+  const [showFeedback, setShowFeedback] = useState<Record<string, boolean>>({
+    problemStatement: false,
+    targetAudience: false,
+    keyPainPoints: false,
+    successMetrics: false,
+  })
+
+  const toggleFeedback = (field: string) => {
+    setShowFeedback(prev => ({ ...prev, [field]: !prev[field] }))
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -259,16 +289,51 @@ ${formData.successMetrics}
                 <p className="text-small text-charcoal/60 ml-6 mb-3">
                   Clearly describe the problem you're addressing. What challenge or gap exists?
                 </p>
-                <textarea
-                  value={formData.problemStatement}
-                  onChange={(e) =>
-                    setFormData({ ...formData, problemStatement: e.target.value })
-                  }
-                  rows={4}
-                  placeholder="Example: Small businesses struggle to manage customer relationships efficiently without expensive CRM software..."
-                  className="w-full px-4 py-3 border border-charcoal/20 rounded-lg focus:outline-none focus:border-teal bg-white text-charcoal placeholder:text-charcoal/40 font-serif text-body resize-none"
-                  required
-                />
+                <div className="relative">
+                  <textarea
+                    value={formData.problemStatement}
+                    onChange={(e) =>
+                      setFormData({ ...formData, problemStatement: e.target.value })
+                    }
+                    rows={4}
+                    placeholder="Example: Small businesses struggle to manage customer relationships efficiently without expensive CRM software..."
+                    className="w-full px-4 py-3 border border-charcoal/20 rounded-lg focus:outline-none focus:border-teal bg-white text-charcoal placeholder:text-charcoal/40 font-serif text-body resize-none"
+                    required
+                  />
+                  {hasSubmitted && fieldFeedback.problemStatement && (
+                    <div className="absolute top-2 right-2">
+                      <button
+                        type="button"
+                        onClick={() => toggleFeedback('problemStatement')}
+                        className="p-2 rounded-full bg-teal/10 hover:bg-teal/20 transition-colors"
+                        title="View AI feedback"
+                      >
+                        <span className="text-teal">💬</span>
+                      </button>
+                      {showFeedback.problemStatement && (
+                        <div className="absolute top-0 right-12 w-80 bg-white border-2 border-teal rounded-lg shadow-xl p-4 z-10">
+                          <div className="flex items-start justify-between mb-2">
+                            <h4 className="font-serif font-semibold text-charcoal text-small">
+                              AI Feedback: Problem Statement
+                            </h4>
+                            <button
+                              type="button"
+                              onClick={() => toggleFeedback('problemStatement')}
+                              className="text-charcoal/40 hover:text-charcoal"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                          <div className="prose prose-sm max-w-none text-charcoal/80">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                              {fieldFeedback.problemStatement}
+                            </ReactMarkdown>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </label>
             </div>
 
@@ -294,16 +359,51 @@ ${formData.successMetrics}
                 <p className="text-small text-charcoal/60 ml-6 mb-3">
                   Who specifically faces this problem? Be as specific as possible.
                 </p>
-                <textarea
-                  value={formData.targetAudience}
-                  onChange={(e) =>
-                    setFormData({ ...formData, targetAudience: e.target.value })
-                  }
-                  rows={3}
-                  placeholder="Example: Small business owners (1-10 employees) in service industries, particularly..."
-                  className="w-full px-4 py-3 border border-charcoal/20 rounded-lg focus:outline-none focus:border-teal bg-white text-charcoal placeholder:text-charcoal/40 font-serif text-body resize-none"
-                  required
-                />
+                <div className="relative">
+                  <textarea
+                    value={formData.targetAudience}
+                    onChange={(e) =>
+                      setFormData({ ...formData, targetAudience: e.target.value })
+                    }
+                    rows={3}
+                    placeholder="Example: Small business owners (1-10 employees) in service industries, particularly..."
+                    className="w-full px-4 py-3 border border-charcoal/20 rounded-lg focus:outline-none focus:border-teal bg-white text-charcoal placeholder:text-charcoal/40 font-serif text-body resize-none"
+                    required
+                  />
+                  {hasSubmitted && fieldFeedback.targetAudience && (
+                    <div className="absolute top-2 right-2">
+                      <button
+                        type="button"
+                        onClick={() => toggleFeedback('targetAudience')}
+                        className="p-2 rounded-full bg-teal/10 hover:bg-teal/20 transition-colors"
+                        title="View AI feedback"
+                      >
+                        <span className="text-teal">💬</span>
+                      </button>
+                      {showFeedback.targetAudience && (
+                        <div className="absolute top-0 right-12 w-80 bg-white border-2 border-teal rounded-lg shadow-xl p-4 z-10">
+                          <div className="flex items-start justify-between mb-2">
+                            <h4 className="font-serif font-semibold text-charcoal text-small">
+                              AI Feedback: Target Audience
+                            </h4>
+                            <button
+                              type="button"
+                              onClick={() => toggleFeedback('targetAudience')}
+                              className="text-charcoal/40 hover:text-charcoal"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                          <div className="prose prose-sm max-w-none text-charcoal/80">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                              {fieldFeedback.targetAudience}
+                            </ReactMarkdown>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </label>
             </div>
 
@@ -329,16 +429,51 @@ ${formData.successMetrics}
                 <p className="text-small text-charcoal/60 ml-6 mb-3">
                   List the main pain points or frustrations caused by this problem.
                 </p>
-                <textarea
-                  value={formData.keyPainPoints}
-                  onChange={(e) =>
-                    setFormData({ ...formData, keyPainPoints: e.target.value })
-                  }
-                  rows={4}
-                  placeholder="Example:&#10;- Lost customer information leads to poor follow-ups&#10;- Manual data entry is time-consuming&#10;- Lack of insights into customer behavior"
-                  className="w-full px-4 py-3 border border-charcoal/20 rounded-lg focus:outline-none focus:border-teal bg-white text-charcoal placeholder:text-charcoal/40 font-serif text-body resize-none"
-                  required
-                />
+                <div className="relative">
+                  <textarea
+                    value={formData.keyPainPoints}
+                    onChange={(e) =>
+                      setFormData({ ...formData, keyPainPoints: e.target.value })
+                    }
+                    rows={4}
+                    placeholder="Example:&#10;- Lost customer information leads to poor follow-ups&#10;- Manual data entry is time-consuming&#10;- Lack of insights into customer behavior"
+                    className="w-full px-4 py-3 border border-charcoal/20 rounded-lg focus:outline-none focus:border-teal bg-white text-charcoal placeholder:text-charcoal/40 font-serif text-body resize-none"
+                    required
+                  />
+                  {hasSubmitted && fieldFeedback.keyPainPoints && (
+                    <div className="absolute top-2 right-2">
+                      <button
+                        type="button"
+                        onClick={() => toggleFeedback('keyPainPoints')}
+                        className="p-2 rounded-full bg-teal/10 hover:bg-teal/20 transition-colors"
+                        title="View AI feedback"
+                      >
+                        <span className="text-teal">💬</span>
+                      </button>
+                      {showFeedback.keyPainPoints && (
+                        <div className="absolute top-0 right-12 w-80 bg-white border-2 border-teal rounded-lg shadow-xl p-4 z-10">
+                          <div className="flex items-start justify-between mb-2">
+                            <h4 className="font-serif font-semibold text-charcoal text-small">
+                              AI Feedback: Key Pain Points
+                            </h4>
+                            <button
+                              type="button"
+                              onClick={() => toggleFeedback('keyPainPoints')}
+                              className="text-charcoal/40 hover:text-charcoal"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                          <div className="prose prose-sm max-w-none text-charcoal/80">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                              {fieldFeedback.keyPainPoints}
+                            </ReactMarkdown>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </label>
             </div>
 
@@ -364,16 +499,51 @@ ${formData.successMetrics}
                 <p className="text-small text-charcoal/60 ml-6 mb-3">
                   How will you measure if your solution successfully addresses this problem?
                 </p>
-                <textarea
-                  value={formData.successMetrics}
-                  onChange={(e) =>
-                    setFormData({ ...formData, successMetrics: e.target.value })
-                  }
-                  rows={3}
-                  placeholder="Example: 20+ active users, 80% user satisfaction, time saved per task..."
-                  className="w-full px-4 py-3 border border-charcoal/20 rounded-lg focus:outline-none focus:border-teal bg-white text-charcoal placeholder:text-charcoal/40 font-serif text-body resize-none"
-                  required
-                />
+                <div className="relative">
+                  <textarea
+                    value={formData.successMetrics}
+                    onChange={(e) =>
+                      setFormData({ ...formData, successMetrics: e.target.value })
+                    }
+                    rows={3}
+                    placeholder="Example: 20+ active users, 80% user satisfaction, time saved per task..."
+                    className="w-full px-4 py-3 border border-charcoal/20 rounded-lg focus:outline-none focus:border-teal bg-white text-charcoal placeholder:text-charcoal/40 font-serif text-body resize-none"
+                    required
+                  />
+                  {hasSubmitted && fieldFeedback.successMetrics && (
+                    <div className="absolute top-2 right-2">
+                      <button
+                        type="button"
+                        onClick={() => toggleFeedback('successMetrics')}
+                        className="p-2 rounded-full bg-teal/10 hover:bg-teal/20 transition-colors"
+                        title="View AI feedback"
+                      >
+                        <span className="text-teal">💬</span>
+                      </button>
+                      {showFeedback.successMetrics && (
+                        <div className="absolute top-0 right-12 w-80 bg-white border-2 border-teal rounded-lg shadow-xl p-4 z-10">
+                          <div className="flex items-start justify-between mb-2">
+                            <h4 className="font-serif font-semibold text-charcoal text-small">
+                              AI Feedback: Success Metrics
+                            </h4>
+                            <button
+                              type="button"
+                              onClick={() => toggleFeedback('successMetrics')}
+                              className="text-charcoal/40 hover:text-charcoal"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                          <div className="prose prose-sm max-w-none text-charcoal/80">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                              {fieldFeedback.successMetrics}
+                            </ReactMarkdown>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </label>
             </div>
           </div>
