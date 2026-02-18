@@ -36,7 +36,62 @@ export default function AssignmentProblemDefinition({
   const instructions = messages.filter((m) => m.role === 'assistant')[0]
 
   // Check if user has submitted
-  const hasSubmitted = messages.filter((m) => m.role === 'user').length > 0
+  const userMessages = messages.filter((m) => m.role === 'user')
+  const aiMessages = messages.filter((m) => m.role === 'assistant')
+  const hasSubmitted = userMessages.length > 0
+
+  // Get latest submission and feedback
+  const latestSubmission = userMessages[userMessages.length - 1]
+  const latestFeedback = aiMessages[aiMessages.length - 1]
+
+  // Parse previous submission to pre-fill form
+  const parsePreviousSubmission = (content: string) => {
+    const problemMatch = content.match(/\*\*Problem Statement:\*\*\s*([\s\S]*?)(?=\*\*Target Audience:|$)/i)
+    const audienceMatch = content.match(/\*\*Target Audience:\*\*\s*([\s\S]*?)(?=\*\*Key Pain Points:|$)/i)
+    const painPointsMatch = content.match(/\*\*Key Pain Points:\*\*\s*([\s\S]*?)(?=\*\*Success Metrics:|$)/i)
+    const metricsMatch = content.match(/\*\*Success Metrics:\*\*\s*([\s\S]*?)$/i)
+
+    return {
+      problemStatement: problemMatch ? problemMatch[1].trim() : '',
+      targetAudience: audienceMatch ? audienceMatch[1].trim() : '',
+      keyPainPoints: painPointsMatch ? painPointsMatch[1].trim() : '',
+      successMetrics: metricsMatch ? metricsMatch[1].trim() : '',
+    }
+  }
+
+  // Parse evaluation scores from feedback
+  const parseScores = (content: string) => {
+    const scores: Record<string, number> = {}
+    const lines = content.split('\n')
+
+    for (const line of lines) {
+      if (line.includes('Market Relevance:') || line.includes('market_relevance')) {
+        const match = line.match(/(\d+(?:\.\d+)?)/);
+        if (match) scores.marketRelevance = parseFloat(match[1])
+      }
+      if (line.includes('Clarity:') || line.includes('clarity')) {
+        const match = line.match(/(\d+(?:\.\d+)?)/);
+        if (match) scores.clarity = parseFloat(match[1])
+      }
+      if (line.includes('Feasibility:') || line.includes('feasibility')) {
+        const match = line.match(/(\d+(?:\.\d+)?)/);
+        if (match) scores.feasibility = parseFloat(match[1])
+      }
+    }
+
+    return scores
+  }
+
+  // Pre-fill form with previous submission if exists
+  React.useEffect(() => {
+    if (hasSubmitted && latestSubmission && formData.problemStatement === '') {
+      const parsed = parsePreviousSubmission(latestSubmission.content)
+      setFormData(parsed)
+    }
+  }, [hasSubmitted, latestSubmission])
+
+  const scores = latestFeedback ? parseScores(latestFeedback.content) : {}
+  const evaluationPassed = hasSubmitted && latestFeedback?.content.includes('ready to move to solution design')
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -58,13 +113,7 @@ ${formData.successMetrics}
 
     onSendMessage(submission)
 
-    // Clear form after submission
-    setFormData({
-      problemStatement: '',
-      targetAudience: '',
-      keyPainPoints: '',
-      successMetrics: '',
-    })
+    // Don't clear form - keep values so user can revise if needed
   }
 
   const isFormValid = Object.values(formData).every((value) => value.trim().length > 0)
@@ -116,7 +165,7 @@ ${formData.successMetrics}
           </div>
 
           {/* Instructions from AI */}
-          {instructions && (
+          {instructions && !hasSubmitted && (
             <div className="mt-6 p-4 bg-teal/5 rounded-lg border border-teal/20">
               <div className="font-semibold text-charcoal mb-2 flex items-center gap-2">
                 <span>📖</span>
@@ -131,6 +180,60 @@ ${formData.successMetrics}
           )}
         </div>
 
+        {/* AI Feedback - Show above form if submitted */}
+        {hasSubmitted && latestFeedback && (
+          <div className={`p-6 rounded-xl shadow-sm border-l-4 ${
+            evaluationPassed ? 'bg-green-50 border-green-500' : 'bg-amber-50 border-amber-500'
+          }`}>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-xl">{evaluationPassed ? '✅' : '📝'}</span>
+              <h3 className="font-serif font-semibold text-charcoal">
+                {evaluationPassed ? 'Excellent Work!' : 'Feedback for Improvement'}
+              </h3>
+            </div>
+
+            {/* Overall Scores */}
+            {Object.keys(scores).length > 0 && (
+              <div className="mb-4 p-4 bg-white rounded-lg">
+                <div className="text-small font-semibold text-charcoal mb-2">Evaluation Scores:</div>
+                <div className="grid grid-cols-3 gap-4">
+                  {scores.marketRelevance && (
+                    <div className="text-center">
+                      <div className={`text-h3 font-bold ${scores.marketRelevance >= 7 ? 'text-green-600' : scores.marketRelevance >= 6 ? 'text-amber-600' : 'text-red-600'}`}>
+                        {scores.marketRelevance}/10
+                      </div>
+                      <div className="text-small text-charcoal/60">Market Relevance</div>
+                    </div>
+                  )}
+                  {scores.clarity && (
+                    <div className="text-center">
+                      <div className={`text-h3 font-bold ${scores.clarity >= 7 ? 'text-green-600' : scores.clarity >= 6 ? 'text-amber-600' : 'text-red-600'}`}>
+                        {scores.clarity}/10
+                      </div>
+                      <div className="text-small text-charcoal/60">Clarity</div>
+                    </div>
+                  )}
+                  {scores.feasibility && (
+                    <div className="text-center">
+                      <div className={`text-h3 font-bold ${scores.feasibility >= 7 ? 'text-green-600' : scores.feasibility >= 6 ? 'text-amber-600' : 'text-red-600'}`}>
+                        {scores.feasibility}/10
+                      </div>
+                      <div className="text-small text-charcoal/60">Feasibility</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* AI Feedback Content */}
+            <div className="prose prose-sm max-w-none">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {latestFeedback.content}
+              </ReactMarkdown>
+            </div>
+          </div>
+        )}
+
         {/* Assignment Form */}
         <form onSubmit={handleSubmit} className="bg-white rounded-b-xl shadow-sm p-8">
           <div className="space-y-8">
@@ -143,6 +246,15 @@ ${formData.successMetrics}
                     Problem Statement
                   </span>
                   <span className="text-small text-red-500">*</span>
+                  {hasSubmitted && scores.clarity && (
+                    <span className={`ml-2 px-2 py-0.5 rounded text-xs font-semibold ${
+                      scores.clarity >= 7 ? 'bg-green-100 text-green-700' :
+                      scores.clarity >= 6 ? 'bg-amber-100 text-amber-700' :
+                      'bg-red-100 text-red-700'
+                    }`}>
+                      {scores.clarity >= 7 ? '✓ Clear' : scores.clarity >= 6 ? '~ Needs improvement' : '✗ Unclear'}
+                    </span>
+                  )}
                 </div>
                 <p className="text-small text-charcoal/60 ml-6 mb-3">
                   Clearly describe the problem you're addressing. What challenge or gap exists?
@@ -169,6 +281,15 @@ ${formData.successMetrics}
                     Target Audience
                   </span>
                   <span className="text-small text-red-500">*</span>
+                  {hasSubmitted && scores.marketRelevance && (
+                    <span className={`ml-2 px-2 py-0.5 rounded text-xs font-semibold ${
+                      scores.marketRelevance >= 7 ? 'bg-green-100 text-green-700' :
+                      scores.marketRelevance >= 6 ? 'bg-amber-100 text-amber-700' :
+                      'bg-red-100 text-red-700'
+                    }`}>
+                      {scores.marketRelevance >= 7 ? '✓ Relevant' : scores.marketRelevance >= 6 ? '~ Needs refinement' : '✗ Not specific'}
+                    </span>
+                  )}
                 </div>
                 <p className="text-small text-charcoal/60 ml-6 mb-3">
                   Who specifically faces this problem? Be as specific as possible.
@@ -195,6 +316,15 @@ ${formData.successMetrics}
                     Key Pain Points
                   </span>
                   <span className="text-small text-red-500">*</span>
+                  {hasSubmitted && scores.clarity && (
+                    <span className={`ml-2 px-2 py-0.5 rounded text-xs font-semibold ${
+                      scores.clarity >= 7 ? 'bg-green-100 text-green-700' :
+                      scores.clarity >= 6 ? 'bg-amber-100 text-amber-700' :
+                      'bg-red-100 text-red-700'
+                    }`}>
+                      {scores.clarity >= 7 ? '✓ Well-defined' : scores.clarity >= 6 ? '~ Add more detail' : '✗ Too vague'}
+                    </span>
+                  )}
                 </div>
                 <p className="text-small text-charcoal/60 ml-6 mb-3">
                   List the main pain points or frustrations caused by this problem.
@@ -221,6 +351,15 @@ ${formData.successMetrics}
                     Success Metrics
                   </span>
                   <span className="text-small text-red-500">*</span>
+                  {hasSubmitted && scores.feasibility && (
+                    <span className={`ml-2 px-2 py-0.5 rounded text-xs font-semibold ${
+                      scores.feasibility >= 7 ? 'bg-green-100 text-green-700' :
+                      scores.feasibility >= 6 ? 'bg-amber-100 text-amber-700' :
+                      'bg-red-100 text-red-700'
+                    }`}>
+                      {scores.feasibility >= 7 ? '✓ Realistic' : scores.feasibility >= 6 ? '~ Needs adjustment' : '✗ Too ambitious'}
+                    </span>
+                  )}
                 </div>
                 <p className="text-small text-charcoal/60 ml-6 mb-3">
                   How will you measure if your solution successfully addresses this problem?
@@ -252,47 +391,48 @@ ${formData.successMetrics}
               {isSending ? (
                 <>
                   <span className="animate-spin inline-block mr-2">⏳</span>
-                  Submitting...
+                  {hasSubmitted ? 'Resubmitting...' : 'Submitting...'}
                 </>
               ) : (
-                'Submit Assignment'
+                hasSubmitted ? '🔄 Resubmit Assignment' : 'Submit Assignment'
               )}
             </button>
           </div>
         </form>
 
-        {/* Submission History - Show all messages after the instructions */}
-        {hasSubmitted && (
-          <div className="mt-6 space-y-4">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-xl">📝</span>
-              <h3 className="font-serif font-semibold text-charcoal text-h3">
-                Submission & Feedback
-              </h3>
-            </div>
-
-            {messages.slice(1).map((message, index) => (
-              <div
-                key={index}
-                className={`p-6 rounded-xl shadow-sm ${
-                  message.role === 'user'
-                    ? 'bg-white border-l-4 border-green-500'
-                    : 'bg-teal/5 border-l-4 border-teal'
-                }`}
-              >
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-xl">{message.role === 'user' ? '✅' : '💬'}</span>
-                  <h4 className="font-serif font-semibold text-charcoal">
-                    {message.role === 'user' ? 'Your Submission' : 'AI Feedback'}
-                  </h4>
+        {/* Previous Submission History (Collapsed by default) */}
+        {hasSubmitted && userMessages.length > 1 && (
+          <div className="mt-6">
+            <details className="group">
+              <summary className="cursor-pointer list-none">
+                <div className="flex items-center gap-2 text-charcoal/60 hover:text-charcoal transition-colors">
+                  <span className="text-small">📜 View Previous Submissions ({userMessages.length - 1})</span>
+                  <span className="text-xs group-open:rotate-90 transition-transform">▶</span>
                 </div>
-                <div className="prose prose-sm max-w-none">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {message.content}
-                  </ReactMarkdown>
-                </div>
+              </summary>
+              <div className="mt-4 space-y-3">
+                {messages.slice(1, -2).reverse().map((message, index) => (
+                  <div
+                    key={index}
+                    className={`p-4 rounded-lg text-small ${
+                      message.role === 'user'
+                        ? 'bg-white border-l-2 border-charcoal/20'
+                        : 'bg-charcoal/5 border-l-2 border-charcoal/10'
+                    }`}
+                  >
+                    <div className="font-semibold text-charcoal/60 mb-1 text-xs">
+                      {message.role === 'user' ? 'Submission' : 'Feedback'} - Earlier
+                    </div>
+                    <div className="prose prose-sm max-w-none text-charcoal/70">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {message.content.substring(0, 200)}
+                        {message.content.length > 200 ? '...' : ''}
+                      </ReactMarkdown>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            </details>
           </div>
         )}
         </div>
