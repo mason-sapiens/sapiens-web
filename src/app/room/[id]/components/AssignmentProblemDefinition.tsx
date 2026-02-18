@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -83,12 +83,12 @@ export default function AssignmentProblemDefinition({
   }
 
   // Pre-fill form with previous submission if exists
-  React.useEffect(() => {
+  useEffect(() => {
     if (hasSubmitted && latestSubmission && formData.problemStatement === '') {
       const parsed = parsePreviousSubmission(latestSubmission.content)
       setFormData(parsed)
     }
-  }, [hasSubmitted, latestSubmission])
+  }, [hasSubmitted, latestSubmission, formData.problemStatement])
 
   const scores = latestFeedback ? parseScores(latestFeedback.content) : {}
   const evaluationPassed = hasSubmitted && latestFeedback?.content.includes('ready to move to solution design')
@@ -425,8 +425,7 @@ ${formData.successMetrics}
                     </div>
                     <div className="prose prose-sm max-w-none text-charcoal/70">
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {message.content.substring(0, 200)}
-                        {message.content.length > 200 ? '...' : ''}
+                        {message.content.substring(0, 200) + (message.content.length > 200 ? '...' : '')}
                       </ReactMarkdown>
                     </div>
                   </div>
