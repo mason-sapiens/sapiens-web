@@ -6,6 +6,8 @@ import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import TypeformOnboarding from './components/TypeformOnboarding'
+import AssignmentProblemDefinition from './components/AssignmentProblemDefinition'
 
 interface Message {
   id: string
@@ -416,98 +418,74 @@ export default function ProjectRoomPage() {
     )
   }
 
-  // Simple onboarding UI
+  // Typeform-style onboarding UI
   if (room.phase === 'onboarding') {
+    const onboardingMessages = room.messages.filter((m) => m.phase === 'onboarding' || !m.phase)
     return (
-      <div className="min-h-screen bg-ivory flex flex-col">
-        {/* Simple Header */}
-        <div className="bg-white border-b border-charcoal/10 p-6">
-          <div className="max-w-3xl mx-auto">
-            <Link href="/profile" className="text-small text-teal hover:underline mb-4 inline-block">
-              ← Back to My Projects
-            </Link>
-          </div>
-        </div>
-
-        {/* Simple Chat Interface */}
-        <div className="flex-1 flex flex-col max-w-3xl mx-auto w-full px-6">
-          {/* Welcome Message */}
-          <div className="py-12 text-center">
-            <h1 className="text-h2 font-serif text-charcoal mb-4">
-              Welcome to Sapiens
-            </h1>
-            <p className="text-body text-charcoal/70">
-              Let's start by understanding your career goals
-            </p>
-          </div>
-
-          {/* Messages */}
-          <div className="flex-1 space-y-6 mb-6 overflow-y-auto">
-            {groupMessagesByPhase(room.messages).map((group, groupIndex) => (
-              <div key={groupIndex}>
-                {groupIndex > 0 && renderPhaseHeader(group.phase)}
-                {group.messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex mb-6 ${
-                      message.role === 'user' ? 'justify-end' : 'justify-start'
-                    }`}
-                  >
-                    <div
-                      className={`max-w-[80%] rounded-lg px-6 py-4 ${
-                        message.role === 'user'
-                          ? 'bg-teal text-ivory'
-                          : 'bg-white border border-charcoal/10 text-charcoal shadow-sm'
-                      }`}
-                    >
-                      <MessageContent content={message.content} role={message.role} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ))}
-
-            {sending && (
-              <div className="flex justify-start">
-                <div className="bg-white border border-charcoal/10 rounded-lg px-6 py-4">
-                  <div className="flex space-x-2">
-                    <div className="w-2 h-2 bg-teal rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-teal rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-teal rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Simple Input */}
-          <div className="pb-6 sticky bottom-0 bg-ivory">
-            <div className="mb-2">
-              <p className="text-small text-charcoal/60">
-                💡 <strong>Example:</strong> "I'm a software engineer interested in product management"
-              </p>
-            </div>
-            <div className="flex gap-3">
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-                placeholder="Tell me about your career goals..."
-                className="flex-1 px-6 py-4 border border-charcoal/20 rounded-lg focus:outline-none focus:border-teal bg-white text-charcoal placeholder:text-charcoal/40 font-serif text-body"
-              />
-              <button
-                onClick={sendMessage}
-                disabled={sending || !input.trim()}
-                className="px-8 py-4 bg-teal text-ivory rounded-lg hover:bg-teal-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-serif text-body"
-              >
-                {sending ? 'Sending...' : 'Send'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <TypeformOnboarding
+        messages={onboardingMessages}
+        onSendMessage={async (message: string) => {
+          if (!message.trim() || sending || !userId) return
+          setSending(true)
+          setInput('')
+          try {
+            const response = await fetch(`/api/rooms/${roomId}/messages`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userId: userId, message: message }),
+            })
+            if (response.ok) {
+              await loadRoom()
+            } else {
+              alert('Failed to send message. Please try again.')
+            }
+          } catch (error) {
+            console.error('Error sending message:', error)
+            alert('Error sending message. Please try again.')
+          } finally {
+            setSending(false)
+          }
+        }}
+        isSending={sending}
+      />
     )
+  }
+
+  // Assignment-style problem definition UI
+  if (room.phase === 'problem_definition') {
+    const problemDefMessages = room.messages.filter((m) => m.phase === 'problem_definition')
+    const hasUserResponse = problemDefMessages.some((m) => m.role === 'user')
+
+    // Show assignment form if no user response yet
+    if (!hasUserResponse && problemDefMessages.length > 0) {
+      return (
+        <AssignmentProblemDefinition
+          messages={problemDefMessages}
+          onSendMessage={async (message: string) => {
+            if (!message.trim() || sending || !userId) return
+            setSending(true)
+            try {
+              const response = await fetch(`/api/rooms/${roomId}/messages`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: userId, message: message }),
+              })
+              if (response.ok) {
+                await loadRoom()
+              } else {
+                alert('Failed to send message. Please try again.')
+              }
+            } catch (error) {
+              console.error('Error sending message:', error)
+              alert('Error sending message. Please try again.')
+            } finally {
+              setSending(false)
+            }
+          }}
+          isSending={sending}
+        />
+      )
+    }
   }
 
   // Full Project Room UI (after onboarding)
