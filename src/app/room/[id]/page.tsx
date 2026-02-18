@@ -10,6 +10,7 @@ interface Message {
   role: 'user' | 'assistant'
   content: string
   createdAt: string
+  phase?: string
 }
 
 interface Milestone {
@@ -36,6 +37,45 @@ interface Room {
   messages: Message[]
   milestones: Milestone[]
   artifacts: Artifact[]
+}
+
+// Phase descriptions for visual separation
+const PHASE_INFO = {
+  onboarding: {
+    title: 'Phase 1: Onboarding',
+    description: 'Getting to know your career goals and background',
+    icon: '👋',
+  },
+  project_generation: {
+    title: 'Phase 2: Project Generation',
+    description: 'Creating a tailored project proposal for your target role',
+    icon: '💡',
+  },
+  problem_definition: {
+    title: 'Phase 3: Problem Definition',
+    description: 'Defining the problem your project will solve',
+    icon: '🎯',
+  },
+  solution_design: {
+    title: 'Phase 4: Solution Design',
+    description: 'Designing your solution approach and architecture',
+    icon: '🏗️',
+  },
+  execution: {
+    title: 'Phase 5: Execution',
+    description: 'Building and implementing your project',
+    icon: '⚡',
+  },
+  review: {
+    title: 'Phase 6: Review',
+    description: 'Reviewing progress and preparing deliverables',
+    icon: '✅',
+  },
+  completed: {
+    title: 'Phase 7: Completed',
+    description: 'Project completed and ready to showcase',
+    icon: '🎉',
+  },
 }
 
 export default function ProjectRoomPage() {
@@ -163,6 +203,59 @@ export default function ProjectRoomPage() {
     }
   }
 
+  // Group messages by phase
+  const groupMessagesByPhase = (messages: Message[]) => {
+    const groups: { phase: string; messages: Message[] }[] = []
+    let currentPhase = messages[0]?.phase || room?.phase || 'onboarding'
+    let currentGroup: Message[] = []
+
+    messages.forEach((message) => {
+      const messagePhase = message.phase || room?.phase || 'onboarding'
+
+      if (messagePhase !== currentPhase && currentGroup.length > 0) {
+        groups.push({ phase: currentPhase, messages: currentGroup })
+        currentGroup = []
+        currentPhase = messagePhase
+      }
+
+      currentGroup.push(message)
+    })
+
+    if (currentGroup.length > 0) {
+      groups.push({ phase: currentPhase, messages: currentGroup })
+    }
+
+    return groups
+  }
+
+  // Render phase header
+  const renderPhaseHeader = (phase: string) => {
+    const info = PHASE_INFO[phase as keyof typeof PHASE_INFO] || {
+      title: phase,
+      description: '',
+      icon: '📋',
+    }
+
+    return (
+      <div className="my-8 relative">
+        <div className="absolute left-0 right-0 top-1/2 h-px bg-gradient-to-r from-transparent via-charcoal/20 to-transparent" />
+        <div className="relative flex justify-center">
+          <div className="bg-ivory px-6 py-4">
+            <div className="bg-white border-2 border-teal/30 rounded-xl px-8 py-4 shadow-sm">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{info.icon}</span>
+                <div>
+                  <h3 className="text-h3 font-serif text-teal">{info.title}</h3>
+                  <p className="text-small text-charcoal/70 mt-1">{info.description}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-ivory flex items-center justify-center">
@@ -211,22 +304,27 @@ export default function ProjectRoomPage() {
 
           {/* Messages */}
           <div className="flex-1 space-y-6 mb-6 overflow-y-auto">
-            {room.messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${
-                  message.role === 'user' ? 'justify-end' : 'justify-start'
-                }`}
-              >
-                <div
-                  className={`max-w-[80%] rounded-lg px-6 py-4 ${
-                    message.role === 'user'
-                      ? 'bg-teal text-ivory'
-                      : 'bg-white border border-charcoal/10 text-charcoal'
-                  }`}
-                >
-                  <p className="text-body whitespace-pre-wrap">{message.content}</p>
-                </div>
+            {groupMessagesByPhase(room.messages).map((group, groupIndex) => (
+              <div key={groupIndex}>
+                {groupIndex > 0 && renderPhaseHeader(group.phase)}
+                {group.messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex mb-6 ${
+                      message.role === 'user' ? 'justify-end' : 'justify-start'
+                    }`}
+                  >
+                    <div
+                      className={`max-w-[80%] rounded-lg px-6 py-4 ${
+                        message.role === 'user'
+                          ? 'bg-teal text-ivory'
+                          : 'bg-white border border-charcoal/10 text-charcoal'
+                      }`}
+                    >
+                      <p className="text-body whitespace-pre-wrap">{message.content}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
             ))}
 
@@ -344,22 +442,27 @@ export default function ProjectRoomPage() {
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-6">
               <div className="max-w-4xl mx-auto space-y-6">
-                {room.messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${
-                      message.role === 'user' ? 'justify-end' : 'justify-start'
-                    }`}
-                  >
-                    <div
-                      className={`max-w-[80%] rounded-lg px-6 py-4 ${
-                        message.role === 'user'
-                          ? 'bg-teal text-ivory'
-                          : 'bg-white border border-charcoal/10 text-charcoal'
-                      }`}
-                    >
-                      <p className="text-body whitespace-pre-wrap">{message.content}</p>
-                    </div>
+                {groupMessagesByPhase(room.messages).map((group, groupIndex) => (
+                  <div key={groupIndex}>
+                    {groupIndex > 0 && renderPhaseHeader(group.phase)}
+                    {group.messages.map((message) => (
+                      <div
+                        key={message.id}
+                        className={`flex mb-6 ${
+                          message.role === 'user' ? 'justify-end' : 'justify-start'
+                        }`}
+                      >
+                        <div
+                          className={`max-w-[80%] rounded-lg px-6 py-4 ${
+                            message.role === 'user'
+                              ? 'bg-teal text-ivory'
+                              : 'bg-white border border-charcoal/10 text-charcoal'
+                          }`}
+                        >
+                          <p className="text-body whitespace-pre-wrap">{message.content}</p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 ))}
                 {sending && (
