@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
+import TypeformOnboarding from './components/TypeformOnboarding'
+import AssignmentProblemDefinition from './components/AssignmentProblemDefinition'
+import PhaseCard from './components/PhaseCard'
 
 interface Message {
   id: string
@@ -41,145 +42,8 @@ interface Room {
   artifacts: Artifact[]
 }
 
-// Custom markdown components with styling
-const createMarkdownComponents = (isUser: boolean) => ({
-  // Headings
-  h1: ({ children }: any) => (
-    <h1 className={`text-2xl font-serif font-bold mb-4 mt-6 ${isUser ? 'text-ivory' : 'text-charcoal'}`}>
-      {children}
-    </h1>
-  ),
-  h2: ({ children }: any) => (
-    <h2 className={`text-xl font-serif font-bold mb-3 mt-5 ${isUser ? 'text-ivory' : 'text-charcoal'}`}>
-      {children}
-    </h2>
-  ),
-  h3: ({ children }: any) => (
-    <h3 className={`text-lg font-serif font-semibold mb-2 mt-4 ${isUser ? 'text-ivory' : 'text-charcoal'}`}>
-      {children}
-    </h3>
-  ),
-
-  // Emphasis
-  strong: ({ children }: any) => (
-    <strong className={`font-bold ${isUser ? 'text-ivory font-extrabold' : 'text-teal'}`}>
-      {children}
-    </strong>
-  ),
-  em: ({ children }: any) => (
-    <em className={`italic ${isUser ? 'text-ivory' : 'text-charcoal'}`}>
-      {children}
-    </em>
-  ),
-
-  // Lists
-  ul: ({ children }: any) => (
-    <ul className={`list-disc list-inside space-y-2 my-3 ml-2 ${isUser ? 'text-ivory' : ''}`}>
-      {children}
-    </ul>
-  ),
-  ol: ({ children }: any) => (
-    <ol className={`list-decimal list-inside space-y-2 my-3 ml-2 ${isUser ? 'text-ivory' : ''}`}>
-      {children}
-    </ol>
-  ),
-  li: ({ children }: any) => (
-    <li className={`text-body leading-relaxed ${isUser ? 'text-ivory' : ''}`}>
-      {children}
-    </li>
-  ),
-
-  // Paragraphs
-  p: ({ children }: any) => (
-    <p className={`text-body leading-relaxed mb-3 last:mb-0 ${isUser ? 'text-ivory' : ''}`}>
-      {children}
-    </p>
-  ),
-
-  // Code
-  code: ({ inline, children }: any) =>
-    inline ? (
-      <code className={`px-2 py-1 rounded text-sm font-mono ${
-        isUser ? 'bg-ivory/20 text-ivory' : 'bg-charcoal/10 text-teal'
-      }`}>
-        {children}
-      </code>
-    ) : (
-      <code className={`block p-4 rounded-lg text-sm font-mono overflow-x-auto my-3 ${
-        isUser ? 'bg-ivory/20 text-ivory' : 'bg-charcoal/5'
-      }`}>
-        {children}
-      </code>
-    ),
-
-  // Blockquote for important content
-  blockquote: ({ children }: any) => (
-    <blockquote className={`border-l-4 pl-4 py-3 my-4 rounded-r-lg ${
-      isUser
-        ? 'border-ivory/50 bg-ivory/10 text-ivory'
-        : 'border-teal bg-teal/5 text-charcoal'
-    }`}>
-      <div className="text-body">{children}</div>
-    </blockquote>
-  ),
-
-  // Links
-  a: ({ href, children }: any) => (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={`underline transition-colors ${
-        isUser
-          ? 'text-ivory hover:text-ivory/80'
-          : 'text-teal hover:text-teal-dark'
-      }`}
-    >
-      {children}
-    </a>
-  ),
-
-  // Horizontal rule
-  hr: () => (
-    <hr className={`border-t my-6 ${isUser ? 'border-ivory/30' : 'border-charcoal/20'}`} />
-  ),
-})
-
-// Component to render message content with markdown
-function MessageContent({ content, role }: { content: string; role: 'user' | 'assistant' }) {
-  const isUser = role === 'user'
-  const isAssistant = role === 'assistant'
-
-  // Check if message contains a project proposal or important action items
-  const hasProjectProposal = content.includes('PROJECT PROPOSAL') || content.includes('# PROJECT')
-  const hasKeyActions = content.includes('Next Steps:') || content.includes('Action Items:') || content.includes('TODO:')
-
-  return (
-    <div className="prose prose-sm max-w-none">
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        components={createMarkdownComponents(isUser)}
-      >
-        {content}
-      </ReactMarkdown>
-
-      {/* Add visual indicator for important messages */}
-      {isAssistant && (hasProjectProposal || hasKeyActions) && (
-        <div className="mt-4 pt-4 border-t border-teal/20">
-          <div className="flex items-center gap-2 text-small">
-            <span className="text-xl">💡</span>
-            <span className="font-bold text-teal">
-              {hasProjectProposal ? 'Project Proposal Generated - Review carefully!' : 'Action Required - Check the steps above'}
-            </span>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// Phase descriptions for visual separation
-const PHASE_INFO = {
+// Phase descriptions
+const PHASE_INFO: Record<string, { title: string; description: string; icon: string }> = {
   onboarding: {
     title: 'Phase 1: Onboarding',
     description: 'Getting to know your career goals and background',
@@ -217,6 +81,16 @@ const PHASE_INFO = {
   },
 }
 
+const PHASE_ORDER = [
+  'onboarding',
+  'project_generation',
+  'problem_definition',
+  'solution_design',
+  'execution',
+  'review',
+  'completed',
+]
+
 export default function ProjectRoomPage() {
   const params = useParams()
   const router = useRouter()
@@ -224,14 +98,11 @@ export default function ProjectRoomPage() {
   const { data: session, status } = useSession()
 
   const [room, setRoom] = useState<Room | null>(null)
-  const [activeTab, setActiveTab] = useState<'chat' | 'archive' | 'timeline'>('chat')
   const [loading, setLoading] = useState(true)
-  const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const [userId, setUserId] = useState('')
 
   useEffect(() => {
-    // Redirect to sign in if not authenticated
     if (status === 'unauthenticated') {
       router.push('/auth/signin')
       return
@@ -241,7 +112,6 @@ export default function ProjectRoomPage() {
       return
     }
 
-    // Use authenticated user's ID
     if (session?.user?.id) {
       setUserId(session.user.id)
       loadRoom()
@@ -255,9 +125,7 @@ export default function ProjectRoomPage() {
         const data = await response.json()
         setRoom(data.room)
 
-        // If room is empty (no messages), trigger initial greeting from AI
         if (data.room.messages.length === 0 && session?.user?.id) {
-          console.log('Room is empty, triggering initial AI greeting...')
           await triggerInitialGreeting(session.user.id)
         }
       }
@@ -270,43 +138,40 @@ export default function ProjectRoomPage() {
 
   const triggerInitialGreeting = async (userId: string) => {
     try {
-      // Send an empty message to trigger the AI's greeting
       const response = await fetch(`/api/rooms/${roomId}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: userId,
-          message: 'START', // Special trigger message for initial greeting
+          message: 'START',
         }),
       })
 
       if (response.ok) {
-        await loadRoom() // Reload to get the AI's greeting
+        await loadRoom()
       }
     } catch (error) {
       console.error('Error triggering initial greeting:', error)
     }
   }
 
-  const sendMessage = async () => {
-    if (!input.trim() || sending || !room || !userId) return
+  const sendMessage = async (message: string) => {
+    if (!message.trim() || sending || !room || !userId) return
 
     setSending(true)
-    const userMessageContent = input
-    setInput('')
 
     try {
       const response = await fetch(`/api/rooms/${roomId}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId: userId, // Use the persistent user ID
-          message: userMessageContent,
+          userId: userId,
+          message: message,
         }),
       })
 
       if (response.ok) {
-        await loadRoom() // Reload room to get new messages
+        await loadRoom()
       } else {
         alert('Failed to send message. Please try again.')
       }
@@ -344,55 +209,17 @@ export default function ProjectRoomPage() {
 
   // Group messages by phase
   const groupMessagesByPhase = (messages: Message[]) => {
-    const groups: { phase: string; messages: Message[] }[] = []
-    let currentPhase = messages[0]?.phase || room?.phase || 'onboarding'
-    let currentGroup: Message[] = []
+    const phaseGroups: Record<string, Message[]> = {}
 
     messages.forEach((message) => {
-      const messagePhase = message.phase || room?.phase || 'onboarding'
-
-      if (messagePhase !== currentPhase && currentGroup.length > 0) {
-        groups.push({ phase: currentPhase, messages: currentGroup })
-        currentGroup = []
-        currentPhase = messagePhase
+      const messagePhase = message.phase || 'onboarding'
+      if (!phaseGroups[messagePhase]) {
+        phaseGroups[messagePhase] = []
       }
-
-      currentGroup.push(message)
+      phaseGroups[messagePhase].push(message)
     })
 
-    if (currentGroup.length > 0) {
-      groups.push({ phase: currentPhase, messages: currentGroup })
-    }
-
-    return groups
-  }
-
-  // Render phase header
-  const renderPhaseHeader = (phase: string) => {
-    const info = PHASE_INFO[phase as keyof typeof PHASE_INFO] || {
-      title: phase,
-      description: '',
-      icon: '📋',
-    }
-
-    return (
-      <div className="my-8 relative">
-        <div className="absolute left-0 right-0 top-1/2 h-px bg-gradient-to-r from-transparent via-charcoal/20 to-transparent" />
-        <div className="relative flex justify-center">
-          <div className="bg-ivory px-6 py-4">
-            <div className="bg-white border-2 border-teal/30 rounded-xl px-8 py-4 shadow-sm">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">{info.icon}</span>
-                <div>
-                  <h3 className="text-h3 font-serif text-teal">{info.title}</h3>
-                  <p className="text-small text-charcoal/70 mt-1">{info.description}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
+    return phaseGroups
   }
 
   if (loading) {
@@ -416,309 +243,120 @@ export default function ProjectRoomPage() {
     )
   }
 
-  // Simple onboarding UI
-  if (room.phase === 'onboarding') {
+  const currentPhaseIndex = PHASE_ORDER.indexOf(room.phase)
+  const messagesByPhase = groupMessagesByPhase(room.messages)
+
+  // Special rendering for onboarding phase when it's the current phase
+  if (room.phase === 'onboarding' && currentPhaseIndex === 0) {
     return (
-      <div className="min-h-screen bg-ivory flex flex-col">
-        {/* Simple Header */}
-        <div className="bg-white border-b border-charcoal/10 p-6">
-          <div className="max-w-3xl mx-auto">
-            <Link href="/profile" className="text-small text-teal hover:underline mb-4 inline-block">
-              ← Back to My Projects
-            </Link>
-          </div>
-        </div>
-
-        {/* Simple Chat Interface */}
-        <div className="flex-1 flex flex-col max-w-3xl mx-auto w-full px-6">
-          {/* Welcome Message */}
-          <div className="py-12 text-center">
-            <h1 className="text-h2 font-serif text-charcoal mb-4">
-              Welcome to Sapiens
-            </h1>
-            <p className="text-body text-charcoal/70">
-              Let's start by understanding your career goals
-            </p>
-          </div>
-
-          {/* Messages */}
-          <div className="flex-1 space-y-6 mb-6 overflow-y-auto">
-            {groupMessagesByPhase(room.messages).map((group, groupIndex) => (
-              <div key={groupIndex}>
-                {groupIndex > 0 && renderPhaseHeader(group.phase)}
-                {group.messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex mb-6 ${
-                      message.role === 'user' ? 'justify-end' : 'justify-start'
-                    }`}
-                  >
-                    <div
-                      className={`max-w-[80%] rounded-lg px-6 py-4 ${
-                        message.role === 'user'
-                          ? 'bg-teal text-ivory'
-                          : 'bg-white border border-charcoal/10 text-charcoal shadow-sm'
-                      }`}
-                    >
-                      <MessageContent content={message.content} role={message.role} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ))}
-
-            {sending && (
-              <div className="flex justify-start">
-                <div className="bg-white border border-charcoal/10 rounded-lg px-6 py-4">
-                  <div className="flex space-x-2">
-                    <div className="w-2 h-2 bg-teal rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-teal rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-teal rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Simple Input */}
-          <div className="pb-6 sticky bottom-0 bg-ivory">
-            <div className="mb-2">
-              <p className="text-small text-charcoal/60">
-                💡 <strong>Example:</strong> "I'm a software engineer interested in product management"
-              </p>
-            </div>
-            <div className="flex gap-3">
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-                placeholder="Tell me about your career goals..."
-                className="flex-1 px-6 py-4 border border-charcoal/20 rounded-lg focus:outline-none focus:border-teal bg-white text-charcoal placeholder:text-charcoal/40 font-serif text-body"
-              />
-              <button
-                onClick={sendMessage}
-                disabled={sending || !input.trim()}
-                className="px-8 py-4 bg-teal text-ivory rounded-lg hover:bg-teal-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-serif text-body"
-              >
-                {sending ? 'Sending...' : 'Send'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <TypeformOnboarding
+        messages={messagesByPhase['onboarding'] || []}
+        onSendMessage={sendMessage}
+        isSending={sending}
+      />
     )
   }
 
-  // Full Project Room UI (after onboarding)
+  // Special rendering for problem_definition phase when it's the current phase
+  if (room.phase === 'problem_definition' && messagesByPhase['problem_definition']?.length > 0) {
+    const problemDefMessages = messagesByPhase['problem_definition']
+    const hasUserResponse = problemDefMessages.some((m) => m.role === 'user')
+
+    // Show assignment form if no user response yet
+    if (!hasUserResponse) {
+      return (
+        <AssignmentProblemDefinition
+          messages={problemDefMessages}
+          onSendMessage={sendMessage}
+          isSending={sending}
+        />
+      )
+    }
+  }
+
+  // Card-based layout for all phases
   return (
-    <div className="min-h-screen bg-ivory flex flex-col">
-      {/* Project Info Header */}
-      <div className="bg-white border-b border-charcoal/10 p-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-h3 font-serif text-charcoal">
-              {room.targetRole ? `${room.targetRole} Project` : 'Project Room'}
-            </h1>
-            {room.targetDomain && (
-              <p className="text-small text-charcoal/60">{room.targetDomain}</p>
-            )}
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="text-small text-charcoal/60">
-              Phase: <span className="font-semibold text-teal">{room.phase}</span>
+    <div className="min-h-screen bg-gradient-to-br from-ivory via-ivory to-teal/5">
+      {/* Header */}
+      <div className="bg-white border-b border-charcoal/10 sticky top-0 z-10 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <Link
+                href="/profile"
+                className="text-small text-teal hover:underline mb-2 inline-block"
+              >
+                ← Back to My Projects
+              </Link>
+              <h1 className="text-h2 font-serif text-charcoal">
+                {room.targetRole ? `${room.targetRole} Project` : 'Your Project Journey'}
+              </h1>
+              {room.targetDomain && (
+                <p className="text-small text-charcoal/60">{room.targetDomain}</p>
+              )}
             </div>
             <button
               onClick={createNewRoom}
               className="px-4 py-2 border border-teal text-teal rounded-lg hover:bg-teal hover:text-ivory transition-colors font-serif text-small"
             >
-              + New Chat
+              + New Project
             </button>
           </div>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="border-b border-charcoal/10 bg-white">
-        <div className="max-w-6xl mx-auto flex gap-6 px-6">
-          <button
-            onClick={() => setActiveTab('chat')}
-            className={`py-4 px-6 font-serif text-body transition-colors ${
-              activeTab === 'chat'
-                ? 'border-b-2 border-teal text-teal'
-                : 'text-charcoal/60 hover:text-charcoal'
-            }`}
-          >
-            Chat
-          </button>
-          <button
-            onClick={() => setActiveTab('archive')}
-            className={`py-4 px-6 font-serif text-body transition-colors ${
-              activeTab === 'archive'
-                ? 'border-b-2 border-teal text-teal'
-                : 'text-charcoal/60 hover:text-charcoal'
-            }`}
-          >
-            Archive ({room.artifacts.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('timeline')}
-            className={`py-4 px-6 font-serif text-body transition-colors ${
-              activeTab === 'timeline'
-                ? 'border-b-2 border-teal text-teal'
-                : 'text-charcoal/60 hover:text-charcoal'
-            }`}
-          >
-            Timeline ({room.milestones.length})
-          </button>
+      {/* Phase Cards */}
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="space-y-6">
+          {PHASE_ORDER.map((phaseName, index) => {
+            const phaseMessages = messagesByPhase[phaseName] || []
+            const isCurrentPhase = room.phase === phaseName
+            const isCompleted = index < currentPhaseIndex
+            const phaseInfo = PHASE_INFO[phaseName] || {
+              title: phaseName,
+              description: '',
+              icon: '📋',
+            }
+
+            // Skip phases that haven't started yet (no messages and not current)
+            if (phaseMessages.length === 0 && !isCurrentPhase) {
+              return null
+            }
+
+            return (
+              <PhaseCard
+                key={phaseName}
+                phase={phaseName}
+                phaseInfo={phaseInfo}
+                messages={phaseMessages}
+                isCurrentPhase={isCurrentPhase}
+                isCompleted={isCompleted}
+                onSendMessage={isCurrentPhase ? sendMessage : undefined}
+                isSending={sending}
+              />
+            )
+          })}
         </div>
-      </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-hidden">
-        {activeTab === 'chat' && (
-          <div className="h-full flex flex-col">
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-6">
-              <div className="max-w-4xl mx-auto space-y-6">
-                {groupMessagesByPhase(room.messages).map((group, groupIndex) => (
-                  <div key={groupIndex}>
-                    {groupIndex > 0 && renderPhaseHeader(group.phase)}
-                    {group.messages.map((message) => (
-                      <div
-                        key={message.id}
-                        className={`flex mb-6 ${
-                          message.role === 'user' ? 'justify-end' : 'justify-start'
-                        }`}
-                      >
-                        <div
-                          className={`max-w-[80%] rounded-lg px-6 py-4 ${
-                            message.role === 'user'
-                              ? 'bg-teal text-ivory'
-                              : 'bg-white border border-charcoal/10 text-charcoal shadow-sm'
-                          }`}
-                        >
-                          <MessageContent content={message.content} role={message.role} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ))}
-                {sending && (
-                  <div className="flex justify-start">
-                    <div className="bg-white border border-charcoal/10 rounded-lg px-6 py-4">
-                      <div className="flex space-x-2">
-                        <div className="w-2 h-2 bg-teal rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-teal rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                        <div className="w-2 h-2 bg-teal rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                      </div>
-                    </div>
-                  </div>
-                )}
+        {/* Quick Stats */}
+        {room.milestones.length > 0 && (
+          <div className="mt-8 bg-white rounded-xl shadow-md p-6">
+            <h3 className="text-h3 font-serif text-charcoal mb-4">Project Progress</h3>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-center p-4 bg-teal/5 rounded-lg">
+                <div className="text-h2 font-serif text-teal">
+                  {room.milestones.filter((m) => m.status === 'completed').length}
+                </div>
+                <div className="text-small text-charcoal/60">Milestones Completed</div>
               </div>
-            </div>
-
-            {/* Input */}
-            <div className="border-t border-charcoal/10 bg-white p-6">
-              <div className="max-w-4xl mx-auto flex gap-3">
-                <input
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-                  placeholder="Type your message..."
-                  disabled={sending}
-                  className="flex-1 px-6 py-4 border border-charcoal/20 rounded-lg focus:outline-none focus:border-teal bg-ivory text-charcoal placeholder:text-charcoal/40 font-serif text-body"
-                />
-                <button
-                  onClick={sendMessage}
-                  disabled={sending || !input.trim()}
-                  className="px-8 py-4 bg-teal text-ivory rounded-lg hover:bg-teal-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-serif text-body"
-                >
-                  {sending ? 'Sending...' : 'Send'}
-                </button>
+              <div className="text-center p-4 bg-charcoal/5 rounded-lg">
+                <div className="text-h2 font-serif text-charcoal">{room.milestones.length}</div>
+                <div className="text-small text-charcoal/60">Total Milestones</div>
               </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'archive' && (
-          <div className="h-full overflow-y-auto p-6">
-            <div className="max-w-4xl mx-auto space-y-4">
-              <h2 className="text-h3 text-teal mb-6">Project Archive</h2>
-              {room.artifacts.length === 0 ? (
-                <p className="text-charcoal/60 text-center py-12">
-                  No documents yet. They'll appear here as your project progresses.
-                </p>
-              ) : (
-                room.artifacts.map((artifact) => (
-                  <div
-                    key={artifact.id}
-                    className="bg-white border border-charcoal/10 rounded-lg p-6"
-                  >
-                    <h3 className="text-h3 text-charcoal mb-2">{artifact.title}</h3>
-                    <p className="text-small text-charcoal/60 mb-4">
-                      {artifact.type} • {new Date(artifact.createdAt).toLocaleDateString()}
-                    </p>
-                    <div className="text-body text-charcoal whitespace-pre-wrap">
-                      {artifact.content}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'timeline' && (
-          <div className="h-full overflow-y-auto p-6">
-            <div className="max-w-4xl mx-auto space-y-4">
-              <h2 className="text-h3 text-teal mb-6">Project Timeline</h2>
-              {room.milestones.length === 0 ? (
-                <p className="text-charcoal/60 text-center py-12">
-                  No milestones yet. They'll be created once your project plan is approved.
-                </p>
-              ) : (
-                room.milestones.map((milestone, index) => (
-                  <div
-                    key={milestone.id}
-                    className="bg-white border border-charcoal/10 rounded-lg p-6 relative"
-                  >
-                    <div className="flex items-start gap-4">
-                      <div
-                        className={`w-8 h-8 rounded-full flex items-center justify-center font-serif ${
-                          milestone.status === 'completed'
-                            ? 'bg-teal text-ivory'
-                            : milestone.status === 'in_progress'
-                            ? 'bg-teal/20 text-teal'
-                            : 'bg-charcoal/10 text-charcoal/60'
-                        }`}
-                      >
-                        {index + 1}
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-h3 text-charcoal mb-2">{milestone.title}</h3>
-                        {milestone.description && (
-                          <p className="text-body text-charcoal/70">{milestone.description}</p>
-                        )}
-                        <div className="mt-4 flex items-center gap-4">
-                          <span
-                            className={`text-small px-3 py-1 rounded ${
-                              milestone.status === 'completed'
-                                ? 'bg-teal/10 text-teal'
-                                : milestone.status === 'in_progress'
-                                ? 'bg-teal/20 text-teal'
-                                : 'bg-charcoal/10 text-charcoal/60'
-                            }`}
-                          >
-                            {milestone.status.replace('_', ' ')}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
+              <div className="text-center p-4 bg-teal/5 rounded-lg">
+                <div className="text-h2 font-serif text-teal">{room.artifacts.length}</div>
+                <div className="text-small text-charcoal/60">Documents Created</div>
+              </div>
             </div>
           </div>
         )}
