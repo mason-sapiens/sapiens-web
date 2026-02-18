@@ -4,17 +4,26 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import PhaseNavigation from './PhaseNavigation'
 
 interface TypeformOnboardingProps {
   messages: any[]
   onSendMessage: (message: string) => void
   isSending: boolean
+  currentPhase: string
+  viewingPhase: string
+  allMessages: any[]
+  onPhaseChange: (phase: string) => void
 }
 
 export default function TypeformOnboarding({
   messages,
   onSendMessage,
   isSending,
+  currentPhase,
+  viewingPhase,
+  allMessages,
+  onPhaseChange,
 }: TypeformOnboardingProps) {
   const [currentInput, setCurrentInput] = useState('')
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
@@ -58,6 +67,14 @@ export default function TypeformOnboarding({
           </Link>
         </div>
       </div>
+
+      {/* Phase Navigation */}
+      <PhaseNavigation
+        currentPhase={currentPhase}
+        viewingPhase={viewingPhase}
+        allMessages={allMessages}
+        onPhaseChange={onPhaseChange}
+      />
 
       <div className="flex items-center justify-center p-6 min-h-[calc(100vh-73px)]">
         <div className="max-w-3xl w-full">

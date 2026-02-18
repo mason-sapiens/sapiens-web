@@ -4,17 +4,26 @@ import { useState } from 'react'
 import Link from 'next/link'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import PhaseNavigation from './PhaseNavigation'
 
 interface AssignmentProblemDefinitionProps {
   messages: any[]
   onSendMessage: (message: string) => void
   isSending: boolean
+  currentPhase: string
+  viewingPhase: string
+  allMessages: any[]
+  onPhaseChange: (phase: string) => void
 }
 
 export default function AssignmentProblemDefinition({
   messages,
   onSendMessage,
   isSending,
+  currentPhase,
+  viewingPhase,
+  allMessages,
+  onPhaseChange,
 }: AssignmentProblemDefinitionProps) {
   const [formData, setFormData] = useState({
     problemStatement: '',
@@ -65,6 +74,14 @@ ${formData.successMetrics}
           </Link>
         </div>
       </div>
+
+      {/* Phase Navigation */}
+      <PhaseNavigation
+        currentPhase={currentPhase}
+        viewingPhase={viewingPhase}
+        allMessages={allMessages}
+        onPhaseChange={onPhaseChange}
+      />
 
       <div className="p-6">
         <div className="max-w-4xl mx-auto">

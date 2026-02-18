@@ -8,6 +8,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import TypeformOnboarding from './components/TypeformOnboarding'
 import AssignmentProblemDefinition from './components/AssignmentProblemDefinition'
+import PhaseNavigation from './components/PhaseNavigation'
 
 interface Message {
   id: string
@@ -467,6 +468,10 @@ export default function ProjectRoomPage() {
           }
         }}
         isSending={sending}
+        currentPhase={room.phase}
+        viewingPhase={currentViewingPhase}
+        allMessages={room.messages}
+        onPhaseChange={setViewingPhase}
       />
     )
   }
@@ -503,6 +508,10 @@ export default function ProjectRoomPage() {
             }
           }}
           isSending={sending}
+          currentPhase={room.phase}
+          viewingPhase={currentViewingPhase}
+          allMessages={room.messages}
+          onPhaseChange={setViewingPhase}
         />
       )
     }
@@ -538,45 +547,12 @@ export default function ProjectRoomPage() {
 
       {/* Phase Navigation */}
       {activeTab === 'chat' && (
-        <div className="bg-white border-b border-charcoal/10">
-          <div className="max-w-6xl mx-auto px-6">
-            <div className="flex gap-2 overflow-x-auto py-2">
-              {PHASE_ORDER.map((phaseName, index) => {
-                const phaseMessages = room.messages.filter((m) => m.phase === phaseName || (!m.phase && phaseName === 'onboarding'))
-                const currentPhaseIndex = PHASE_ORDER.indexOf(room.phase)
-                const isCurrentPhase = room.phase === phaseName
-                const isCompleted = index < currentPhaseIndex
-                const hasContent = phaseMessages.length > 0 || isCurrentPhase
-                const isSelected = currentViewingPhase === phaseName
-                const phaseInfo = PHASE_INFO[phaseName as keyof typeof PHASE_INFO] || { title: phaseName, icon: '📋' }
-
-                // Skip phases that haven't started yet
-                if (!hasContent) return null
-
-                return (
-                  <button
-                    key={phaseName}
-                    onClick={() => setViewingPhase(phaseName)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all whitespace-nowrap text-small ${
-                      isSelected
-                        ? 'bg-teal text-ivory'
-                        : 'bg-charcoal/5 text-charcoal/70 hover:bg-charcoal/10'
-                    }`}
-                  >
-                    <span>{phaseInfo.icon}</span>
-                    <span className="font-serif">Phase {index + 1}</span>
-                    {isCurrentPhase && (
-                      <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded text-xs">
-                        Current
-                      </span>
-                    )}
-                    {isCompleted && <span className="text-green-400">✓</span>}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        </div>
+        <PhaseNavigation
+          currentPhase={room.phase}
+          viewingPhase={currentViewingPhase}
+          allMessages={room.messages}
+          onPhaseChange={setViewingPhase}
+        />
       )}
 
       {/* Tabs */}
