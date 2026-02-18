@@ -32,8 +32,11 @@ export default function AssignmentProblemDefinition({
     successMetrics: '',
   })
 
-  // Get instructions from AI
+  // Get instructions from AI (first message)
   const instructions = messages.filter((m) => m.role === 'assistant')[0]
+
+  // Check if user has submitted
+  const hasSubmitted = messages.filter((m) => m.role === 'user').length > 0
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -54,6 +57,14 @@ ${formData.successMetrics}
     `.trim()
 
     onSendMessage(submission)
+
+    // Clear form after submission
+    setFormData({
+      problemStatement: '',
+      targetAudience: '',
+      keyPainPoints: '',
+      successMetrics: '',
+    })
   }
 
   const isFormValid = Object.values(formData).every((value) => value.trim().length > 0)
@@ -98,7 +109,9 @@ ${formData.successMetrics}
             </div>
             <div className="text-right">
               <div className="text-small text-charcoal/60">Due: N/A</div>
-              <div className="text-small font-semibold text-teal">Not Submitted</div>
+              <div className={`text-small font-semibold ${hasSubmitted ? 'text-green-600' : 'text-teal'}`}>
+                {hasSubmitted ? '✓ Submitted' : 'Not Submitted'}
+              </div>
             </div>
           </div>
 
@@ -248,20 +261,38 @@ ${formData.successMetrics}
           </div>
         </form>
 
-        {/* Previous submissions */}
-        {messages.filter((m) => m.role === 'user').length > 0 && (
-          <div className="mt-6 p-6 bg-white rounded-xl shadow-sm border-l-4 border-green-500">
+        {/* Submission History - Show all messages after the instructions */}
+        {hasSubmitted && (
+          <div className="mt-6 space-y-4">
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-xl">✅</span>
-              <h3 className="font-serif font-semibold text-charcoal">
-                Previous Submission
+              <span className="text-xl">📝</span>
+              <h3 className="font-serif font-semibold text-charcoal text-h3">
+                Submission & Feedback
               </h3>
             </div>
-            <div className="prose prose-sm max-w-none">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {messages.filter((m) => m.role === 'user')[0]?.content || ''}
-              </ReactMarkdown>
-            </div>
+
+            {messages.slice(1).map((message, index) => (
+              <div
+                key={index}
+                className={`p-6 rounded-xl shadow-sm ${
+                  message.role === 'user'
+                    ? 'bg-white border-l-4 border-green-500'
+                    : 'bg-teal/5 border-l-4 border-teal'
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-xl">{message.role === 'user' ? '✅' : '💬'}</span>
+                  <h4 className="font-serif font-semibold text-charcoal">
+                    {message.role === 'user' ? 'Your Submission' : 'AI Feedback'}
+                  </h4>
+                </div>
+                <div className="prose prose-sm max-w-none">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {message.content}
+                  </ReactMarkdown>
+                </div>
+              </div>
+            ))}
           </div>
         )}
         </div>

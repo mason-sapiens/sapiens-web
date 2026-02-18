@@ -479,10 +479,9 @@ export default function ProjectRoomPage() {
   // Assignment-style problem definition UI (only when viewing current problem_definition phase)
   if (isViewingCurrentPhase && room.phase === 'problem_definition') {
     const problemDefMessages = room.messages.filter((m) => m.phase === 'problem_definition')
-    const hasUserResponse = problemDefMessages.some((m) => m.role === 'user')
 
-    // Show assignment form if no user response yet
-    if (!hasUserResponse && problemDefMessages.length > 0) {
+    // Show assignment form throughout the problem_definition phase
+    if (problemDefMessages.length > 0) {
       return (
         <AssignmentProblemDefinition
           messages={problemDefMessages}
