@@ -219,6 +219,16 @@ const PHASE_INFO = {
   },
 }
 
+const PHASE_ORDER = [
+  'onboarding',
+  'project_generation',
+  'problem_definition',
+  'solution_design',
+  'execution',
+  'review',
+  'completed',
+]
+
 export default function ProjectRoomPage() {
   const params = useParams()
   const router = useRouter()
@@ -231,6 +241,7 @@ export default function ProjectRoomPage() {
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const [userId, setUserId] = useState('')
+  const [viewingPhase, setViewingPhase] = useState<string | null>(null)
 
   useEffect(() => {
     // Redirect to sign in if not authenticated
@@ -256,6 +267,11 @@ export default function ProjectRoomPage() {
       if (response.ok) {
         const data = await response.json()
         setRoom(data.room)
+
+        // Set viewing phase to current phase if not set
+        if (!viewingPhase) {
+          setViewingPhase(data.room.phase)
+        }
 
         // If room is empty (no messages), trigger initial greeting from AI
         if (data.room.messages.length === 0 && session?.user?.id) {
@@ -418,8 +434,12 @@ export default function ProjectRoomPage() {
     )
   }
 
-  // Typeform-style onboarding UI
-  if (room.phase === 'onboarding') {
+  // Determine which phase we're currently viewing
+  const currentViewingPhase = viewingPhase || room.phase
+  const isViewingCurrentPhase = currentViewingPhase === room.phase
+
+  // Typeform-style onboarding UI (only when viewing current onboarding phase)
+  if (isViewingCurrentPhase && room.phase === 'onboarding') {
     const onboardingMessages = room.messages.filter((m) => m.phase === 'onboarding' || !m.phase)
     return (
       <TypeformOnboarding
@@ -451,8 +471,8 @@ export default function ProjectRoomPage() {
     )
   }
 
-  // Assignment-style problem definition UI
-  if (room.phase === 'problem_definition') {
+  // Assignment-style problem definition UI (only when viewing current problem_definition phase)
+  if (isViewingCurrentPhase && room.phase === 'problem_definition') {
     const problemDefMessages = room.messages.filter((m) => m.phase === 'problem_definition')
     const hasUserResponse = problemDefMessages.some((m) => m.role === 'user')
 
@@ -516,6 +536,49 @@ export default function ProjectRoomPage() {
         </div>
       </div>
 
+      {/* Phase Navigation */}
+      {activeTab === 'chat' && (
+        <div className="bg-white border-b border-charcoal/10">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="flex gap-2 overflow-x-auto py-2">
+              {PHASE_ORDER.map((phaseName, index) => {
+                const phaseMessages = room.messages.filter((m) => m.phase === phaseName || (!m.phase && phaseName === 'onboarding'))
+                const currentPhaseIndex = PHASE_ORDER.indexOf(room.phase)
+                const isCurrentPhase = room.phase === phaseName
+                const isCompleted = index < currentPhaseIndex
+                const hasContent = phaseMessages.length > 0 || isCurrentPhase
+                const isSelected = currentViewingPhase === phaseName
+                const phaseInfo = PHASE_INFO[phaseName as keyof typeof PHASE_INFO] || { title: phaseName, icon: '📋' }
+
+                // Skip phases that haven't started yet
+                if (!hasContent) return null
+
+                return (
+                  <button
+                    key={phaseName}
+                    onClick={() => setViewingPhase(phaseName)}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all whitespace-nowrap text-small ${
+                      isSelected
+                        ? 'bg-teal text-ivory'
+                        : 'bg-charcoal/5 text-charcoal/70 hover:bg-charcoal/10'
+                    }`}
+                  >
+                    <span>{phaseInfo.icon}</span>
+                    <span className="font-serif">Phase {index + 1}</span>
+                    {isCurrentPhase && (
+                      <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded text-xs">
+                        Current
+                      </span>
+                    )}
+                    {isCompleted && <span className="text-green-400">✓</span>}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="border-b border-charcoal/10 bg-white">
         <div className="max-w-6xl mx-auto flex gap-6 px-6">
@@ -559,29 +622,43 @@ export default function ProjectRoomPage() {
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-6">
               <div className="max-w-4xl mx-auto space-y-6">
-                {groupMessagesByPhase(room.messages).map((group, groupIndex) => (
-                  <div key={groupIndex}>
-                    {groupIndex > 0 && renderPhaseHeader(group.phase)}
-                    {group.messages.map((message) => (
-                      <div
-                        key={message.id}
-                        className={`flex mb-6 ${
-                          message.role === 'user' ? 'justify-end' : 'justify-start'
-                        }`}
-                      >
-                        <div
-                          className={`max-w-[80%] rounded-lg px-6 py-4 ${
-                            message.role === 'user'
-                              ? 'bg-teal text-ivory'
-                              : 'bg-white border border-charcoal/10 text-charcoal shadow-sm'
-                          }`}
-                        >
-                          <MessageContent content={message.content} role={message.role} />
+                {/* Phase header */}
+                {(() => {
+                  const phaseInfo = PHASE_INFO[currentViewingPhase as keyof typeof PHASE_INFO] || { title: currentViewingPhase, description: '', icon: '📋' }
+                  return (
+                    <div className="bg-white border-2 border-teal/30 rounded-xl p-6 shadow-sm mb-6">
+                      <div className="flex items-center gap-3">
+                        <span className="text-3xl">{phaseInfo.icon}</span>
+                        <div>
+                          <h3 className="text-h3 font-serif text-teal">{phaseInfo.title}</h3>
+                          <p className="text-small text-charcoal/70 mt-1">{phaseInfo.description}</p>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                ))}
+                    </div>
+                  )
+                })()}
+
+                {/* Messages for selected phase */}
+                {room.messages
+                  .filter((m) => m.phase === currentViewingPhase || (!m.phase && currentViewingPhase === 'onboarding'))
+                  .map((message) => (
+                    <div
+                      key={message.id}
+                      className={`flex mb-6 ${
+                        message.role === 'user' ? 'justify-end' : 'justify-start'
+                      }`}
+                    >
+                      <div
+                        className={`max-w-[80%] rounded-lg px-6 py-4 ${
+                          message.role === 'user'
+                            ? 'bg-teal text-ivory'
+                            : 'bg-white border border-charcoal/10 text-charcoal shadow-sm'
+                        }`}
+                      >
+                        <MessageContent content={message.content} role={message.role} />
+                      </div>
+                    </div>
+                  ))}
                 {sending && (
                   <div className="flex justify-start">
                     <div className="bg-white border border-charcoal/10 rounded-lg px-6 py-4">
