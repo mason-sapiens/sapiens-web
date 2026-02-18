@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 
@@ -14,6 +14,7 @@ interface Message {
 
 export default function ChatPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { data: session, status } = useSession()
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -26,10 +27,10 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Check if we should force create a new room
-  const searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
-  const forceNew = searchParams.get('new') === 'true'
+  const forceNew = searchParams?.get('new') === 'true'
 
   useEffect(() => {
+    console.log('Chat page loaded, forceNew:', forceNew)
     // Redirect to sign in if not authenticated
     if (status === 'unauthenticated') {
       router.push('/auth/signin')
