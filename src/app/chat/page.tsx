@@ -25,6 +25,10 @@ export default function ChatPage() {
   const [roomId, setRoomId] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
+  // Check if we should force create a new room
+  const searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
+  const forceNew = searchParams.get('new') === 'true'
+
   useEffect(() => {
     // Redirect to sign in if not authenticated
     if (status === 'unauthenticated') {
@@ -60,6 +64,19 @@ export default function ChatPage() {
 
   const loadOrCreateRoom = async (userId: string) => {
     try {
+      // If forceNew is true, skip checking for existing rooms and create a new one
+      if (forceNew) {
+        console.log('Force new room requested, creating new chat room')
+        const newRoom = await createProjectRoom('onboarding')
+        if (newRoom) {
+          router.push(`/room/${newRoom.id}`)
+        } else {
+          // Fallback to chat interface if room creation fails
+          setInitialized(true)
+        }
+        return
+      }
+
       // Check if user has existing rooms
       console.log('Checking for existing rooms for user:', userId)
       const response = await fetch(`/api/rooms?userId=${userId}`)

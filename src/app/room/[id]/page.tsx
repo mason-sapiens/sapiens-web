@@ -295,12 +295,12 @@ export default function ProjectRoomPage() {
                 <p className="text-small text-charcoal/60">{room.targetDomain}</p>
               )}
             </div>
-            <button
-              onClick={createNewRoom}
+            <Link
+              href="/chat?new=true"
               className="px-4 py-2 border border-teal text-teal rounded-lg hover:bg-teal hover:text-ivory transition-colors font-serif text-small"
             >
-              + New Project
-            </button>
+              + New Chat
+            </Link>
           </div>
         </div>
       </div>

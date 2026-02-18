@@ -87,10 +87,10 @@ export default function ProfilePage() {
             </p>
           </div>
           <Link
-            href="/chat"
+            href="/chat?new=true"
             className="px-6 py-3 bg-teal text-ivory rounded-lg hover:bg-teal-dark transition-colors font-serif text-body"
           >
-            Start New Project
+            + New Chat
           </Link>
         </div>
 
@@ -101,7 +101,7 @@ export default function ProfilePage() {
               Start your first career development project to get personalized guidance
             </p>
             <Link
-              href="/chat"
+              href="/chat?new=true"
               className="inline-block px-8 py-4 bg-teal text-ivory rounded-lg hover:bg-teal-dark transition-colors font-serif text-body"
             >
               Start Your First Project

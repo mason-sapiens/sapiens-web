@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
@@ -49,8 +50,24 @@ ${formData.successMetrics}
   const isFormValid = Object.values(formData).every((value) => value.trim().length > 0)
 
   return (
-    <div className="min-h-screen bg-ivory p-6">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-ivory">
+      {/* Header with New Chat button */}
+      <div className="bg-white border-b border-charcoal/10 sticky top-0 z-10">
+        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+          <Link href="/profile" className="text-small text-teal hover:underline">
+            ← Back to My Projects
+          </Link>
+          <Link
+            href="/chat?new=true"
+            className="px-4 py-2 border border-teal text-teal rounded-lg hover:bg-teal hover:text-ivory transition-colors font-serif text-small"
+          >
+            + New Chat
+          </Link>
+        </div>
+      </div>
+
+      <div className="p-6">
+        <div className="max-w-4xl mx-auto">
         {/* Assignment Header */}
         <div className="bg-white rounded-t-xl border-b-4 border-teal p-8 shadow-sm">
           <div className="flex items-start justify-between mb-4">
@@ -230,6 +247,7 @@ ${formData.successMetrics}
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   )

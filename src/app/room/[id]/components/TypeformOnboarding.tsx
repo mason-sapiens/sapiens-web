@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
@@ -42,8 +43,24 @@ export default function TypeformOnboarding({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal/5 via-ivory to-teal/5 flex items-center justify-center p-6">
-      <div className="max-w-3xl w-full">
+    <div className="min-h-screen bg-gradient-to-br from-teal/5 via-ivory to-teal/5">
+      {/* Header with New Chat button */}
+      <div className="bg-white/80 backdrop-blur-sm border-b border-charcoal/10 sticky top-0 z-10">
+        <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
+          <Link href="/profile" className="text-small text-teal hover:underline">
+            ← Back to My Projects
+          </Link>
+          <Link
+            href="/chat?new=true"
+            className="px-4 py-2 border border-teal text-teal rounded-lg hover:bg-teal hover:text-ivory transition-colors font-serif text-small"
+          >
+            + New Chat
+          </Link>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-center p-6 min-h-[calc(100vh-73px)]">
+        <div className="max-w-3xl w-full">
         {/* Progress indicator */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
@@ -163,6 +180,7 @@ export default function TypeformOnboarding({
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   )
