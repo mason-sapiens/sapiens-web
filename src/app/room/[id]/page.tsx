@@ -244,7 +244,6 @@ export default function ProjectRoomPage() {
     )
   }
 
-  const currentPhaseIndex = PHASE_ORDER.indexOf(room.phase)
   const messagesByPhase = groupMessagesByPhase(room.messages)
 
   // Set selected phase to current phase on load
@@ -254,11 +253,16 @@ export default function ProjectRoomPage() {
     }
   }, [room])
 
-  // Determine which phase to display
+  // Determine which phase to display - only allow viewing if phase has started
   const displayPhase = selectedPhase || room.phase || 'onboarding'
+  const currentPhaseIndex = PHASE_ORDER.indexOf(room.phase)
+  const displayPhaseIndex = PHASE_ORDER.indexOf(displayPhase)
 
-  // Special rendering for onboarding phase when it's the current phase and viewing it
-  if (displayPhase === 'onboarding' && room.phase === 'onboarding') {
+  // Only show special forms for current active phase, not when reviewing
+  const isViewingCurrentPhase = displayPhase === room.phase
+
+  // Special rendering for onboarding phase - only when it's current and active
+  if (isViewingCurrentPhase && room.phase === 'onboarding') {
     return (
       <TypeformOnboarding
         messages={messagesByPhase['onboarding'] || []}
@@ -268,20 +272,22 @@ export default function ProjectRoomPage() {
     )
   }
 
-  // Special rendering for problem_definition phase when viewing it and it's current
-  if (displayPhase === 'problem_definition' && room.phase === 'problem_definition' && messagesByPhase['problem_definition']?.length > 0) {
-    const problemDefMessages = messagesByPhase['problem_definition']
-    const hasUserResponse = problemDefMessages.some((m) => m.role === 'user')
+  // Special rendering for problem_definition phase - only when current and no response yet
+  if (isViewingCurrentPhase && room.phase === 'problem_definition') {
+    const problemDefMessages = messagesByPhase['problem_definition'] || []
+    if (problemDefMessages.length > 0) {
+      const hasUserResponse = problemDefMessages.some((m) => m.role === 'user')
 
-    // Show assignment form if no user response yet
-    if (!hasUserResponse) {
-      return (
-        <AssignmentProblemDefinition
-          messages={problemDefMessages}
-          onSendMessage={sendMessage}
-          isSending={sending}
-        />
-      )
+      // Show assignment form if no user response yet
+      if (!hasUserResponse) {
+        return (
+          <AssignmentProblemDefinition
+            messages={problemDefMessages}
+            onSendMessage={sendMessage}
+            isSending={sending}
+          />
+        )
+      }
     }
   }
 
