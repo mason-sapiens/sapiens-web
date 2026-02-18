@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { createMarkdownComponents, MessageContent } from './MessageContent'
@@ -153,6 +154,3 @@ export default function PhaseCard({
     </div>
   )
 }
-
-// Add React import
-import React from 'react'
