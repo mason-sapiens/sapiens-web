@@ -252,10 +252,10 @@ export default function ProjectRoomPage() {
     if (room && !selectedPhase) {
       setSelectedPhase(room.phase)
     }
-  }, [room, selectedPhase])
+  }, [room])
 
   // Determine which phase to display
-  const displayPhase = selectedPhase || room.phase
+  const displayPhase = selectedPhase || room.phase || 'onboarding'
 
   // Special rendering for onboarding phase when it's the current phase and viewing it
   if (displayPhase === 'onboarding' && room.phase === 'onboarding') {
@@ -366,7 +366,7 @@ export default function ProjectRoomPage() {
 
       {/* Selected Phase Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
-        {(() => {
+        {displayPhase && (() => {
           const phaseMessages = messagesByPhase[displayPhase] || []
           const isCurrentPhase = room.phase === displayPhase
           const phaseIndex = PHASE_ORDER.indexOf(displayPhase)
