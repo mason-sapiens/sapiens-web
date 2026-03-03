@@ -7,7 +7,6 @@ import Link from 'next/link'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import TypeformOnboarding from './components/TypeformOnboarding'
-import AssignmentProblemDefinition from './components/AssignmentProblemDefinition'
 import PhaseNavigation from './components/PhaseNavigation'
 
 interface Message {
@@ -476,45 +475,8 @@ export default function ProjectRoomPage() {
     )
   }
 
-  // Assignment-style problem definition UI (only when viewing current problem_definition phase)
-  if (isViewingCurrentPhase && room.phase === 'problem_definition') {
-    const problemDefMessages = room.messages.filter((m) => m.phase === 'problem_definition')
-
-    // Show assignment form throughout the problem_definition phase
-    if (problemDefMessages.length > 0) {
-      return (
-        <AssignmentProblemDefinition
-          messages={problemDefMessages}
-          onSendMessage={async (message: string) => {
-            if (!message.trim() || sending || !userId) return
-            setSending(true)
-            try {
-              const response = await fetch(`/api/rooms/${roomId}/messages`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: userId, message: message }),
-              })
-              if (response.ok) {
-                await loadRoom()
-              } else {
-                alert('Failed to send message. Please try again.')
-              }
-            } catch (error) {
-              console.error('Error sending message:', error)
-              alert('Error sending message. Please try again.')
-            } finally {
-              setSending(false)
-            }
-          }}
-          isSending={sending}
-          currentPhase={room.phase}
-          viewingPhase={currentViewingPhase}
-          allMessages={room.messages}
-          onPhaseChange={setViewingPhase}
-        />
-      )
-    }
-  }
+  // Problem definition now uses regular chat interface (no special form)
+  // The field-specific feedback from AI will still appear in chat messages
 
   // Full Project Room UI (after onboarding)
   return (
